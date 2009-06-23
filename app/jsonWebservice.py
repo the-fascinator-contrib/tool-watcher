@@ -14,6 +14,7 @@ import BaseHTTPServer, datetime
 class PasteServer(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):
         self.fromDate = self.headers.getheader("Last-Modified")
+        print 'self.headers: ', dir(self.headers)
         self.toDate = None
         
         self.__getFeed()
@@ -22,8 +23,10 @@ class PasteServer(BaseHTTPServer.BaseHTTPRequestHandler):
         fs = FileSystem(".")
         json = JsonFeed(db, fs=fs, fromDate=self.fromDate, toDate=self.toDate)
         lastModifiedFile = json.lastModifiedTimeStamp()
+        self.send_response(200, "OK")
         self.send_header("Content-type", "application/json")
         self.send_header("Last-Modified", lastModifiedFile)
+        self.end_headers()
         self.wfile.write(json.getFeed())
 
 if __name__ == "__main__":

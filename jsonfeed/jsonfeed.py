@@ -26,7 +26,7 @@ class JsonFeed(object):
         for record in self.records:
             filePath, timeStamp, eventName, isDir = record
             if filePath.startswith("file://") and not isDir:
-                dict[filePath] = self.__getjSonEntry(timeStamp, eventName)
+                dict[str(filePath)] = self.__getjSonEntry(timeStamp, eventName)
         return dict
     
     def lastModifiedTimeStamp(self):
@@ -41,7 +41,7 @@ class JsonFeed(object):
     def __getjSonEntry(self, timeStamp, eventName):
         detail = {}
         detail["time"] = self.__fs.formatDateTime(timeStamp)
-        detail["state"] = eventName
+        detail["state"] = str(eventName)
         return detail
     
     

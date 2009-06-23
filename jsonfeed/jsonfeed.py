@@ -1,5 +1,6 @@
 from datetime import datetime
 import sys, time
+import json
 
 class JsonFeed(object):
     def __init__(self, db, fs, fromDate=None, toDate=None):
@@ -27,7 +28,7 @@ class JsonFeed(object):
             filePath, timeStamp, eventName, isDir = record
             if filePath.startswith("file://") and not isDir:
                 dict[str(filePath)] = self.__getjSonEntry(timeStamp, eventName)
-        return dict
+        return json.dumps(dict)
     
     def lastModifiedTimeStamp(self):
         self.__getRecord()

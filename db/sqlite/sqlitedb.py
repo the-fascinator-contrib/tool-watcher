@@ -1,6 +1,8 @@
 import os  
 import datetime, time
-   
+from urllib import quote_plus
+
+
 #from pysqlite2 import dbapi2 as sqlite3 # if using python 2.4  
 import sqlite3  # if using python 2.5 or greater
 
@@ -90,6 +92,8 @@ class Database(object):
     def processEvent(self, eventList):
         for event in eventList:
             filePath, timeStamp, eventName, isDir, init = event
+            filePath = filePath.replace("file://", "")
+            filePath = "file://" + quote_plus(filePath)
             if init:  #IF init
                 records = self.select(file=filePath) # select based on filePath
                 if records==[]:#self.dbData.has_key(filePath):

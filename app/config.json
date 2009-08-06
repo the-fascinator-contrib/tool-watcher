@@ -1,7 +1,7 @@
 { "watcher" : {   
 				  "db" : "sqlite",
 				  "os" : "linux",
-				  "daemon" : "False",
+				  "daemon" : "True",
 				  "watchDirs" : ["/home/octalina"],
 				  
 				  "feedservice" : { "host" : "localhost",

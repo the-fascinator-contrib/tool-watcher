@@ -1,5 +1,8 @@
-from pyinotify import EventsCodes, ThreadedNotifier, Notifier, WatchManager, ProcessEvent, WatchManagerError
-import os, time
+
+from pyinotify import EventsCodes, Notifier, WatchManager, ProcessEvent
+#from pyinotify import ThreadedNotifier, WatchManagerError
+import os
+import time
 from stat import *
 
 class EventWatcherClass(object):
@@ -13,8 +16,8 @@ class EventWatcherClass(object):
         self.__listeners = []
         self.__fs = fs
         self.__watchManager = WatchManager()
-        self.configFilePath = self.__config.configFilePath
-        self.cp = CustomProcess(self, self.__listener, self.configFilePath)
+        self.configFile = self.__config.configFile
+        self.cp = CustomProcess(self, self.__listener, self.configFile)
         
         self.__daemonize = self.__config.daemon
         
@@ -27,14 +30,14 @@ class EventWatcherClass(object):
             self.dirToBeWatched.append(os.path.expanduser("/tmp"))  #watching /tmp directory by default
             
         #also watch the config file
-        self.configFile = self.__config.configFilePath
+        self.configFile = self.__config.configFile
         if self.configFile not in self.dirToBeWatched:
             self.dirToBeWatched.append(self.configFile)
     
     def __processWatchedDir(self, stopWatchDir=[]):
         self.__getDirToBeWatched()
         for dir in self.dirToBeWatched:
-            if dir.rstrip("/") != self.configFilePath.rstrip("/"):
+            if dir.rstrip("/") != self.configFile.rstrip("/"):
                 if self.__fs.isDirectory(dir):
                     #modifiedDate = os.stat(dir)[ST_MTIME] #when a file start being watched, use the current system time
                     modifiedDate = time.time() 
@@ -44,7 +47,7 @@ class EventWatcherClass(object):
                     print 'fail to add dir to watched, the dir %s might not exist' % dir
                     
         for dir in stopWatchDir:
-            if dir.rstrip("/") != self.configFilePath.rstrip("/"):
+            if dir.rstrip("/") != self.configFile.rstrip("/"):
                 if self.__fs.isDirectory(dir):
                     #modifiedDate = os.stat(dir)[ST_MTIME] #when a file start being watched, use the current system time
                     modifiedDate = time.time() 
@@ -95,15 +98,17 @@ class EventWatcherClass(object):
             except Exception, e:
                 print str(e)
                 pass
-    
+
+
+
 class CustomProcess(ProcessEvent):
     #event structure:
     #<Event dir=False mask=0x2 maskname=IN_MODIFY name=file10 path=/home/octalina/workspace/watcher/watchDir 
     #pathname=/home/octalina/workspace/watcher/watchDir/file10 wd=1 >
-    def __init__(self, eventWatcher, listener, configFilePath):
+    def __init__(self, eventWatcher, listener, configFile):
         self.eventWatcher = eventWatcher
         self.__listener = listener
-        self.configFilePath = configFilePath
+        self.configFile = configFile
     
     def getSystemModifiedDate(self, filePath):
         if os.path.exists(filePath):
@@ -133,7 +138,7 @@ class CustomProcess(ProcessEvent):
         self.__processEachEvents("mod", event)
 
     def __processEachEvents(self, eventName, event):
-        if event.pathname.rstrip("/") == self.configFilePath.rstrip("/"):
+        if event.pathname.rstrip("/") == self.configFile.rstrip("/"):
             self.eventWatcher.resetDirToBeWatched(configChanged=True)
         else:
             #modifiedDate = self.getSystemModifiedDate(event.pathname)

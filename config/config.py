@@ -1,135 +1,161 @@
-import sys
+
+try:
+    from json import loads
+    #from json import dumps
+except:
+    from json2_5 import loads
+from types import DictType
+
 
 class Config(object):
-    # Constructor:
-    #   Config(configFileSearchPaths=["."], configFileName="config.json", fileSystem=None)
-    # Properties:
-    #   settings            (default None dictionary)
-    #   configFilePath      (the configuration file that is being used)
-    # Methods:
-    #   reload()
-    #   addReloadWatcher(callback)      ( callback method notify(config) )
-    #   removeReloadWatcher(callback)
-    #
+    """
+     Constructor:
+       Config(fileSystem, configFileName="config.json", configFileSearchPaths=["."]):
+     Properties:
+       settings            (default None dictionary)
+       configFile          (the configuration file that is being used)
+       .x                   config value for x
+     Methods:
+       reload()
+       addReloadWatcher(callback)      ( callback method notify(config) )
+       removeReloadWatcher(callback)
+       get(key, default=None)
+       ("key1" [,"default"])   -> value or defaultValue  (shortcut method)      (__call__)
+    """
     class DefaultDict(dict):
         def __missing__(self, key):
             return None
 
-    def __init__(self, fileSystem, configFileSearchPaths=["."], configFileName="config.json"):
+        def getDefaultDict(self, name):
+            return Config.DefaultDict(self.get(name, {}))
+
+        def __call__(self, name, default=None):
+            """ select a element via dot '.' notation 
+                e.g. key1.key2.key3 -> key3.value """
+            #data = self.get(name, default)
+            #if type(data) is DictType:
+            #    data = Config.DefaultDict(data)
+            sector = name
+            d = self
+            names = sector.split(".")
+            last = names.pop()
+            for name in names:
+                d = d.get(name, {})
+                if type(d) is not DictType:
+                    d = {}
+                    break
+            data = d.get(last, default)
+            if type(data) is DictType:
+                data = Config.DefaultDict(data)
+            return data
+
+        def __getattr__(self, name):
+            #return self.get(name)
+            """ select a element via dot '.' notation
+                e.g. key1.key2.key3 -> key3.value """
+            #data = self.get(name, default)
+            #if type(data) is DictType:
+            #    data = Config.DefaultDict(data)
+            default = None
+            sector = name
+            d = self
+            names = sector.split(".")
+            last = names.pop()
+            for name in names:
+                d = d.get(name, {})
+                if type(d) is not DictType:
+                    d = {}
+                    break
+            data = d.get(last, default)
+            if type(data) is DictType:
+                data = Config.DefaultDict(data)
+            return data
+
+        def __setattr__(self, name, value):
+            self[name] = value
+
+        def __delattr__(self, name):
+            self.pop(name)
+            
+    
+
+    def __init__(self, fileSystem, configFileName="config.json", configFileSearchPaths=["."]):
+        """Config(fileSystem, configFileName="config.json", configFileSearchPaths=["."])"""
         self.__fileSystem = fileSystem
         self.__settings = Config.DefaultDict()
         self.__configFileSearchPaths = configFileSearchPaths
         self.__configFileName = configFileName
-        self.__configFilePath = None
+        self.__configFile = None
         self.__data = None
-        self.__watchers = []
+        self.__reloadWatchers = []
+        # find the configFilePath
+        for path in configFileSearchPaths:
+            configFile = fileSystem.join(path, configFileName)
+            configFile = fileSystem.absPath(configFile)
+            if fileSystem.isFile(configFile):
+                self.__configFile = configFile
+                break;
+        if self.__configFile is None:
+            print "Warning: no configFile '%s' found!" % configFileName
         self.reload()
 
-    @property
-    def settings(self):
-        return self.__settings
-
-    @property
-    def configFilePath(self):
-        return self.__configFilePath
-
-    @property
-    def feedservice(self):
-        if self.__settings.has_key("feedservice"):
-            return self.__settings["feedservice"]
-        return None
-    @property
-    def host(self):
-        if self.feedservice and self.feedservice.has_key("host"):
-            return self.feedservice["host"] 
-        return None
-    @property
-    def port(self):
-        if self.feedservice and self.feedservice.has_key("port"):
-            return self.feedservice["port"] 
-        return None
-    
-    @property
-    def platform(self):
-        if self.__settings.has_key("os"):
-            return self.__settings["os"]
-        return None
-    
-    @property
-    def daemon(self):
-        if self.__settings.has_key("daemon"):
-            daemon = self.__settings["daemon"]
-            if daemon.lower().strip() == "true":
-                return True
-            return False
-        return False
-    
-    @property
-    def db(self):
-        if self.__settings.has_key("db"):
-            return self.__settings["db"]
-        return None
-
-    @property
-    def watchDirs(self):
-        if self.__settings.has_key("watchDirs"):
-            return self.__settings["watchDirs"]
-        return []
-    
-    @property
-    def watchFeeds(self):
-        if self.__settings.has_key("watchFeed"):
-            return self.__settings["watchFeed"]
-        return []
-    
-    @property
-    def feedDuration(self):
-        if self.__settings.has_key("feedDuration"):
-            return self.__settings["feedDuration"]
-        return "5"   #5 min
-
     def reload(self):
-        if self.__configFilePath is None:
-            self.__configFilePath = self.__getConfigFile()
-        #need to do if no config file, create one
-        data = self.__fileSystem.readFile(self.__configFilePath)
-        if data is None:
-            self.__configFilePath = self.__getConfigFile()
-            data = self.__fileSystem.readFile(self.__configFilePath)
+        #print "reload()"
+        data = self.__getConfigData()
         if data==self.__data:
             return
         self.__data = data
         try:
-            d = eval(data)
+            #d = eval(data)
+            d = loads(data)
             self.__settings.clear()
-            self.__settings.update(d["watcher"])
+            self.__settings.update(d)
         except Exception, e:
-            msg = "Error loading configFile '%s' - '%s'" % (self.__configFilePath, str(e))
+            msg = "Error loading configFile '%s' - '%s'" % (self.__configFile, str(e))
             raise Exception(msg)
-        for watcher in self.__watchers:
+        for watcher in self.__reloadWatchers:
             try:
                 watcher(self)
             except: pass
 
     def addReloadWatcher(self, callback):
-        self.__watchers.append(callback)
+        self.__reloadWatchers.append(callback)
 
     def removeReloadWatcher(self, callback):
         try:
-            self.__watchers.remove(callback)
-        except: pass
-
-    def __getConfigFile(self):
-        self.__configFilePath = None
-        for path in self.__configFileSearchPaths:
-            file = self.__fileSystem.join(path, self.__configFileName)
-            if self.__fileSystem.isFile(file):
-                return self.__fileSystem.absPath(file)
-        return None
-    
+            self.__reloadWatchers.remove(callback)
+            return True
+        except:
+            return False
+        
     @property
-    def configFilePath(self):
-        return self.__getConfigFile()
+    def configFile(self):
+        return self.__configFile
+
+    @property
+    def settings(self):
+        return self.__settings
+
+    def __getConfigData(self):
+        data = self.__fileSystem.readFile(self.__configFile)
+        return data
+    
+    def keys(self):
+        return self.__settings.keys()
+    
+    def get(self, name, default=None):
+        return self.__settings.get(name, default)
+
+    def __getitem__(self, name):
+        return self.__settings.get(name)
+    
+    def __getattr__(self, name):
+        return self.__settings(name)
+
+    def __call__(self, name, default=None):
+        return self.__settings(name, default)
+
+    
 
 
 class FileSystem(object):
@@ -147,7 +173,7 @@ class FileSystem(object):
 
     @staticmethod
     def absPath(path):
-        return FileSystem.os.path.absPath(path)
+        return FileSystem.os.path.abspath(path)
 
     @staticmethod
     def isFile(file):

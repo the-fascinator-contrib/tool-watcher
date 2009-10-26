@@ -1,15 +1,19 @@
 { "watcher" : {   
 				  "db" : "sqlite",
-				  "os" : "linux",
+                  "dbFile": "queue.db",
 				  "daemon" : "False",
-				  "watchDirs" : ["/home/octalina/Documents"],
-				  
+				  "watchDirs" : {
+                                    "../watchThis":
+                                        {
+                                         "ignoreFileFilter": "*.tmp|$*.*",
+                                         "ignoreDirectories": "tmp|temp"
+                                        }
+                                },			  
 				  "feedservice" : { "host" : "localhost",
-				  				   "port" : 9000,
+				  				   "port" : 9000
 				  			   },
-				  			   
 				  "feedWatcher" : { "watchFeeds" 	: ["http://feeds.delicious.com/v2/rss/tag/adfi_der?count=15"],
-							   	    "feedDuration"	: "5" }
-				  
+							   	    "feedDuration"	: "5" },
+                  "test": "data1"
 			}
 }

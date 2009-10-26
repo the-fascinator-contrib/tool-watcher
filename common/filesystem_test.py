@@ -7,9 +7,8 @@ from unittest import TestCase
 from filesystem import FileSystem
 
 class FileSystemTest(TestCase):
-    def setup(self):
+    def setUp(self):
         self.fs = FileSystem(".")
-        pass
 
     def tearDown(self):
         pass

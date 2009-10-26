@@ -11,15 +11,16 @@ from config import Config
 class ConfigTest(TestCase):
     # Config
     # Constructor:
-    #   Config(configFileSearchPaths=["."], configFileName="config.json", fileSystem=None)
+    #   Config(fileSystem, configFileName="config.json", configFileSearchPaths=["."]):
     # Properties:
     #   settings            (default None dictionary)
-    #   configFilePath      (the configuration file that is being used)
+    #   configFile          (the configuration file that is being used)
     # Methods:
     #   reload()
     #   addReloadWatcher(callback)      ( callback method notify(config) )
     #   removeReloadWatcher(callback)
-    def setup(self):
+    
+    def setUp(self):
         pass
 
     def tearDown(self):
@@ -28,20 +29,20 @@ class ConfigTest(TestCase):
     def testConfigFilePath(self):
         mockFileSystem = MockFileSystem(files={"/test/config.json": "{}"}, testHomePath="/test")
         config = Config(fileSystem=mockFileSystem)
-        self.assertEquals(config.configFilePath, "/test/config.json")
+        self.assertEquals(config.configFile, "/test/config.json")
 
         mockFileSystem = MockFileSystem(
                     files={"/test/x/config.json":"{}", "/test/config.json": "{}"},
                     testHomePath="/test")
-        config = Config([".", "./x"], fileSystem=mockFileSystem)
-        self.assertEquals(config.configFilePath, "/test/config.json")
-        config = Config(["./x", "."], fileSystem=mockFileSystem)
-        self.assertEquals(config.configFilePath, "/test/x/config.json")
+        config = Config(configFileSearchPaths=[".", "./x"], fileSystem=mockFileSystem)
+        self.assertEquals(config.configFile, "/test/config.json")
+        config = Config(configFileSearchPaths=["./x", "."], fileSystem=mockFileSystem)
+        self.assertEquals(config.configFile, "/test/x/config.json")
 
 
     def testSettings(self):
         mockFileSystem = MockFileSystem(
-                files={"/test/config.json": "{'key':'value'}"},
+                files={"/test/config.json": '{"key":"value"}'},
                 testHomePath="/test")
         config = Config(fileSystem=mockFileSystem)
         settings = config.settings
@@ -51,19 +52,19 @@ class ConfigTest(TestCase):
 
     def testReload(self):
         mockFileSystem = MockFileSystem(
-                files={"/test/config.json": "{'key':'value'}"})
+                files={"/test/config.json": '{"key":"value"}'})
         config = Config(fileSystem=mockFileSystem)
         settings = config.settings
         self.assertEquals(settings["key"], "value")
 
-        mockFileSystem.writeFile("/test/config.json", "{'key':'newValue'}")
+        mockFileSystem.writeFile("/test/config.json", '{"key":"newValue"}')
         config.reload()
         self.assertEquals(settings["key"], "newValue")
 
 
     def testReloadWatcher(self):
         mockFileSystem = MockFileSystem(
-                files={"/test/config.json": "{'key':'value'}"})
+                files={"/test/config.json": '{"key":"value"}'})
         config = Config(fileSystem=mockFileSystem)
         count = [0]
         def callback(configObj):
@@ -71,7 +72,7 @@ class ConfigTest(TestCase):
             count[0] += 1
         config.addReloadWatcher(callback)
         #
-        mockFileSystem.writeFile("/test/config.json", "{'key':'newValue'}")
+        mockFileSystem.writeFile("/test/config.json", '{"key":"newValue"}')
         config.reload()
         self.assertEquals(count[0], 1)
 
@@ -107,7 +108,8 @@ class MockFileSystem():
         if file is None:
             return None
         file = self.absPath(file)
-        return self.__files.get(file, None)
+        data = self.__files.get(file, None)
+        return data
 
     def writeFile(self, file, data):        # for testing only
         file = self.absPath(file)

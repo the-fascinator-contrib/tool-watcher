@@ -1,4 +1,6 @@
-import os, datetime, time
+
+import os
+
 
 class FileSystem(object):
     def __init__(self, cwd="."):
@@ -11,7 +13,9 @@ class FileSystem(object):
         return self.absolutePath(path)
     def absolutePath(self, path="."):
         return os.path.abspath(self.join(self.__cwd, path)).replace("\\", "/")
-    
+
+    def isDir(self, path):
+        return self.isDirectory(path)
     def isDirectory(self, path):
         absPath = self.absolutePath(path)
         return os.path.isdir(absPath)
@@ -85,7 +89,14 @@ class FileSystem(object):
     
     def join(self, *args):
         return os.path.join(*args).replace("\\", "/")
-    
+
+    def getModifiedTime(self, file):
+        try:
+            mt = os.stat(file)[8]
+        except:
+            mt = 0
+        return mt
+
     def walker(self, path, func):
         """ path = path to walk
             func = callback function that take (path, dirs, files)
@@ -146,18 +157,5 @@ class FileSystem(object):
     
     def split(self, path):
         return os.path.split(path)
-    
-    #should not be here
-    def formatDateTime(self, timeStamp, utc=False):
-        format = "%Y-%m-%d %H:%M:%S" #for standard sqlite format
-        if utc:
-            format = "%a, %d %b %Y %H:%M:%S GMT"
-        dt = datetime.datetime.fromtimestamp(timeStamp).strftime(format)
-        return dt
-    
-    def convertGMTToFloat(self, timeStr):
-        format = "%a, %d %b %Y %H:%M:%S GMT"
-        mytime = time.strptime(timeStr, format)
-        return time.mktime(mytime)
         
     

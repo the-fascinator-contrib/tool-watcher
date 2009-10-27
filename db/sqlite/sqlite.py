@@ -1,4 +1,27 @@
+#
+#    Copyright (C) 2009  ADFI,
+#    University of Southern Queensland
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 
+""" Sqlite Module to handle database transaction
+@requires: types, sys
+ - If running through ironPython, requires cli, System.Data.SQLite and System.Data modules
+ - If running using standard Python, requires sqlite3 
+"""
 
 from types import IntType
 import sys
@@ -28,12 +51,17 @@ class Database(object):
         updateList(uList)     # uList is a list of (file, eventTime, eventName, isDir) tuples
         close()
         _open()      # reopen
+    @ivar PathSep: path separator
     """
 
     PathSep = "/"
 
 
     def __init__(self, dbFile):
+        """ Database Constructor class
+        @param dbFile: database filename 
+        @type dbFile: String 
+        """
         if dbFile is None:
             dbFile = "../db/sqlite/queue.s3db"
         self.__dbFile = dbFile
@@ -58,6 +86,14 @@ class Database(object):
 
 
     def getRecordsFromDate(self, fromDate, toDate=None):
+        """ Get record list from provided date 
+        @param fromDate: From date in number in seconds
+        @type fromDate: integer 
+        @param toDate: To date in number in seconds, defaulted to None
+        @type toDate: integer  
+        @return: rows of result
+        @rtype: list
+        """
         sqlStr = "SELECT * FROM queue WHERE time >= '%s'%s ORDER BY time asc"
         t = ""
         if toDate is not None:
@@ -68,6 +104,12 @@ class Database(object):
 
 
     def getRecordsStartingWithPath(self, path=""):
+        """ Get record list starting with provided path
+        @param path: file path name, defaulted to ""
+        @type path: String
+        @return: rows of result
+        @rtype: list  
+        """
         path = path.replace("'", "''").replace("\\", "/")
         #sqlStr = "SELECT * FROM queue WHERE file like '%s%s%%'"
         #sqlStr = sqlStr % (path.rstrip(self.PathSep), self.PathSep)
@@ -81,6 +123,12 @@ class Database(object):
 
 
     def getRecordWithPath(self, path):
+        """ Get record list with provided path
+        @param path: file path name
+        @type path: String
+        @return: list of result if found, otherwise None
+        @rtype: list  
+        """
         path = path.replace("'", "''").replace("\\", "/")
         sqlStr = "SELECT * FROM queue WHERE file='%s'"
         sqlStr = sqlStr % path
@@ -92,8 +140,11 @@ class Database(object):
 
 
     def updateList(self, uList):
-        """
-            uList is a list of (file, eventTime, eventName, isDir) tuples
+        """ Update record in database based on the provided uList
+        @param uList: uList is a list of (file, eventTime, eventName, isDir) tuples
+        @type uList: tuples 
+        @return: number of rows updated
+        @rtype: integer
         """
         if uList==[]:
             return 0
@@ -112,14 +163,22 @@ class Database(object):
 
 
     def close(self):
+        """ Close database connection """
         self.__close()
 
 
     def _open(self):
+        """ Open database connection """
         self.__open()
 
 
     def _selectWhere(self, **kwargs):
+        """ Retrieve records based on provided query information
+        @param kwargs: list of keywords argument provided for select statement
+        @param kwargs: dictionary
+        @return: list of results if found
+        @rtype: list 
+        """
         sqlStr = "SELECT * FROM queue"
         sortBy = kwargs.pop("sortBy", None)
         if len(kwargs)>0:
@@ -132,10 +191,23 @@ class Database(object):
 
 
     def __del__(self):
+        """ Destructor to close database connection """
         self.close()
 
 
     def __getAddStr(self, file, eventTime, eventName, isDir):
+        """ Get insert record to database sql statement
+        @param file: file path to be inserted to database
+        @type file: String
+        @param eventTime: event time when event happened in number in seconds
+        @type eventTime: integer     
+        @param eventName: event name returned from filesystem watcher
+        @type eventName: String
+        @param isDir: True if the file path is a directory, otherwise False
+        @type isDir: boolean
+        @return: sql insert statement
+        @rtype: String  
+        """
         if type(isDir) is not IntType:
             isDir = int(isDir)
         sqlStr = "INSERT INTO queue(file, time, event, isDir) VALUES('%s', '%s', '%s', '%s');"
@@ -144,6 +216,18 @@ class Database(object):
 
 
     def __getUpdateStr(self, file, eventTime, eventName, isDir):
+        """ Get update record to database sql statement
+        @param file: file path to be inserted to database
+        @type file: String
+        @param eventTime: event time when event happened in number in seconds
+        @type eventTime: integer     
+        @param eventName: event name returned from filesystem watcher
+        @type eventName: String
+        @param isDir: True if the file path is a directory, otherwise False
+        @type isDir: boolean
+        @return: sql update statement
+        @rtype: String  
+        """
         if isDir is None:
             sqlStr = "UPDATE queue SET time='%s', event='%s' WHERE file='%s';"
             sqlStr = sqlStr % (eventTime, eventName, file)
@@ -154,12 +238,14 @@ class Database(object):
 
 
     def __closeIP(self):
+        """ Closing database connection using ironpython sqlite library"""
         if self.__connection is not None:
             self.__connection.Close()
             self.__connection.Dispose()
             self.__connection = None
 
     def __openIP(self):
+        """ Opening database connection using ironpython sqlite library"""
         self.__connection = SQLiteConnection("Data Source=%s" % self.__dbFile)
         try:
             self.__connection.Open()
@@ -189,6 +275,12 @@ class Database(object):
             self.__connection.Open()
 
     def __executeQueryIP(self, sqlStr):
+        """ Executing database querying statement using ironpython sqlite library 
+        @param sqlStr: sql query statement
+        @type sqlStr: String
+        @return: list of found result
+        @rtype: list
+        """
         cmd = self.__connection.CreateCommand()
         cmd.CommandText = sqlStr
         reader = cmd.ExecuteReader()
@@ -208,6 +300,12 @@ class Database(object):
         return rows
 
     def __executeNonQueryIP(self, sqlStr):
+        """ Executing database update/delete statement using ironpython sqlite library
+        @param sqlStr: sql query statement
+        @type sqlStr: String
+        @return: number of rows updated/deleted
+        @rtype: integer
+        """
         cmd = self.__connection.CreateCommand()
         cmd.CommandText = sqlStr
         rowsUpdated = cmd.ExecuteNonQuery()
@@ -216,6 +314,8 @@ class Database(object):
 
 
     def __openPy(self):
+        """ Connect to database and create necessary queue table information 
+        using standard sqlite library"""
         import os
         if not os.path.exists(self.__dbFile):
             self.__db = sqlite3.connect(self.__dbFile, check_same_thread=False)
@@ -230,11 +330,18 @@ class Database(object):
             self.__db = sqlite3.connect(self.__dbFile, check_same_thread=False)
 
     def __closePy(self):
+        """ Close database connection using standard sqlite library"""
         if self.__db is not None:
             self.__db.close()
             self.__db = None
 
     def __executeQueryPy(self, sqlStr):
+        """ Executing database querying statement using standard sqlite library 
+        @param sqlStr: sql query statement
+        @type sqlStr: String
+        @return: list of found result
+        @rtype: list
+        """
         cursor = self.__db.cursor()
         cursor.execute(sqlStr)
         records = cursor.fetchall()
@@ -243,6 +350,10 @@ class Database(object):
         return records
 
     def __executeNonQueryPy(self, sqlStr):
+        """ Executing database update/delete statement using standard sqlite library
+        @param sqlStr: sql query statement
+        @type sqlStr: String
+        """
         cursor = self.__db.cursor()
         for s in sqlStr.split("\n"):
             cursor.execute(s)
@@ -252,6 +363,10 @@ class Database(object):
 
     #############################################
     def processEvent(self, eventList):
+        """ Process Event method (only used when standard sqlite library is used)
+        @param eventList: list of events to be processed
+        @type eventList: tuple  
+        """
         for event in eventList:
             filePath, timeStamp, eventName, isDir, init = event
             if init:  #IF init

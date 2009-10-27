@@ -1,4 +1,26 @@
+#
+#    Copyright (C) 2009  ADFI,
+#    University of Southern Queensland
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
 
+""" Config modules to process config file written in json format
+@requires: - python_simplejson OR 
+           - common/json2_5.py 
+"""
 try:
     from json import loads
     #from json import dumps
@@ -23,6 +45,7 @@ class Config(object):
        ("key1" [,"default"])   -> value or defaultValue  (shortcut method)      (__call__)
     """
     class DefaultDict(dict):
+        """ Default dictionary class """
         def __missing__(self, key):
             return None
 
@@ -72,15 +95,33 @@ class Config(object):
             return data
 
         def __setattr__(self, name, value):
+            """ Set attribute name and value
+            @param name: attribute name
+            @type name: String
+            @param valu: attribute value
+            @type name: String
+            """  
             self[name] = value
 
         def __delattr__(self, name):
+            """ Delete specified attribute 
+            @param name: attribute name
+            @type name: String 
+            """
             self.pop(name)
             
     
 
     def __init__(self, fileSystem, configFileName="config.json", configFileSearchPaths=["."]):
-        """Config(fileSystem, configFileName="config.json", configFileSearchPaths=["."])"""
+        """ Config constructor class. 
+        Usage: Config(fileSystem, configFileName="config.json", configFileSearchPaths=["."])
+        @param filesystem: filesystem object
+        @type filesystem: FileSystem
+        @param configFileName: the config file path, defaulted to config.json
+        @type configFileName: String
+        @param configFileSearchPaths: search path for config file, defaulted to ["."]
+        @type configFileSearchPaths: list       
+        """
         self.__fileSystem = fileSystem
         self.__settings = Config.DefaultDict()
         self.__configFileSearchPaths = configFileSearchPaths
@@ -100,6 +141,7 @@ class Config(object):
         self.reload()
 
     def reload(self):
+        """ Reload config file """
         #print "reload()"
         data = self.__getConfigData()
         if data==self.__data:
@@ -119,9 +161,11 @@ class Config(object):
             except: pass
 
     def addReloadWatcher(self, callback):
+        """ add reloadWatcher callback function """
         self.__reloadWatchers.append(callback)
 
     def removeReloadWatcher(self, callback):
+        """ remove reloadWatcher callback function """
         try:
             self.__reloadWatchers.remove(callback)
             return True
@@ -130,26 +174,48 @@ class Config(object):
         
     @property
     def configFile(self):
+        """ Config file """
         return self.__configFile
 
     @property
     def settings(self):
+        """ Config settings Dictionary """
         return self.__settings
 
     def __getConfigData(self):
+        """ Get config file content """
         data = self.__fileSystem.readFile(self.__configFile)
         return data
     
     def keys(self):
+        """ Return list of keys defined in config file """
         return self.__settings.keys()
     
     def get(self, name, default=None):
+        """ Get value of specified key-name from config file
+        @param name: key in the config
+        @type name: String
+        @param default: default value if the key not found, defaulted to None
+        @type: String
+        """
         return self.__settings.get(name, default)
 
     def __getitem__(self, name):
+        """ Get item based on speficied key-name 
+        @param name: key in the config
+        @type name: Sring
+        @return: requested item value
+        @rtype: String 
+        """
         return self.__settings.get(name)
     
     def __getattr__(self, name):
+        """ Get attribute based on specified attribute name
+        @param name: attribute name in the config
+        @type name: Sring
+        @return: requested attribute value
+        @rtype: String  
+        """
         return self.__settings(name)
 
     def __call__(self, name, default=None):
@@ -159,6 +225,7 @@ class Config(object):
 
 
 class FileSystem(object):
+    """ FileSystem class """
     # Methods
     #   join(*args)     -> string
     #   absPath(path)   -> string
@@ -169,18 +236,42 @@ class FileSystem(object):
 
     @staticmethod
     def join(*args):
+        """ Join multiple path
+        @param args: list of paths
+        @type args: list
+        @return: the joined file path
+        @rtype: String
+        """
         return FileSystem.os.path.join(*args)
 
     @staticmethod
     def absPath(path):
+        """ Get the absolute path of the specified path 
+        @param path: file path
+        @type path: String
+        @return: absolute path of the specified path
+        @rtype: String
+        """
         return FileSystem.os.path.abspath(path)
 
     @staticmethod
     def isFile(file):
+        """ Check if it's a file
+        @param file: file path
+        @type file: String
+        @return: True if it's a file, otherwise False
+        @rtype: boolean  
+        """
         return FileSystem.os.path.isfile(file)
 
     @staticmethod
     def readFile(file):
+        """ Read file content 
+        @param file: file path
+        @type file: String
+        @return: content of the specified file
+        @rytpe: String
+        """
         if file is None:
             return None
         data = None

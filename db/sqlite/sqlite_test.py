@@ -1,4 +1,27 @@
 #!/usr/bin/python
+#
+#    Copyright (C) 2009  ADFI,
+#    University of Southern Queensland
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+
+""" Sqlite unit test module to test sqlite module 
+@requires: - sys, unittest, os
+           - sqlite module from sqlite.py
+"""
 
 import sys
 if sys.platform=="cli":
@@ -12,7 +35,7 @@ if sys.platform=="cli":
 from unittest import TestCase
 import os
 
-from sqlitedb import Database
+from sqlite import Database
 #    Constructor:
 #        Database(dbFile)        # e.g. dbFile="path/databaseFileName.s3db"
 #    Methods:
@@ -27,11 +50,14 @@ testDB = "test.s3db"
 
 
 class DatabaseTest(TestCase):
+    """ Main unit test class """
     def setUp(self):
+        """ Setting up database """
         self.db = Database(testDB)
         pass
 
     def tearDown(self):
+        """ Closing datase connection """
         self.db.close()
         try:
             os.remove(testDB)
@@ -46,15 +72,19 @@ class DatabaseTest(TestCase):
         self.db.updateList(uList)
 
     def testInitCreate(self):
+        """ Test creating new database file """
         self.assertTrue(os.path.isfile(testDB))
 
     def testInit(self):
+        """ Test initializing database data """
         self.writeTestRows()
         self.db.close()
         self.db = Database(testDB)
 
     def testUpdateList(self):
-        # updateList(uList)     # uList is a list of (file, eventTime, eventName, isDir) tuples
+        """ Test update database records
+        Calling: B{updateList(uList)}     # uList is a list of (file, eventTime, eventName, isDir) tuples
+        """
         uList = [("one", 1L, "cre", False),
                  ("two", 2L, "mod", False),
                  ("three", 3L, "start", True)]
@@ -67,7 +97,9 @@ class DatabaseTest(TestCase):
         self.assertEquals(len(rows), 2)
 
     def testGetRecordsFromDate(self):
-        #getRecordsFromDate(fromDate, toDate=None)   #Note: Date is an integer number in Seconds
+        """ Test retrieving records from database by specifying date
+        Calling: B{getRecordsFromDate(fromDate, toDate=None)}   #Note: Date is an integer number in Seconds
+        """
         self.writeTestRows()
         rows = self.db.getRecordsFromDate(1)
         self.assertEquals(len(rows), 3)
@@ -77,7 +109,9 @@ class DatabaseTest(TestCase):
         self.assertEquals(len(rows), 1)
 
     def testGetRecordsStartingWithPath(self):
-        #getRecordsStartingWithPath(path)
+        """ Test retrieving records from database by specifying starting file path
+        Calling: B{getRecordsStartingWithPath(path)}
+        """
         self.writeTestRows()
         rows = self.db.getRecordsStartingWithPath("t")
         self.assertEquals(len(rows), 2)
@@ -85,20 +119,23 @@ class DatabaseTest(TestCase):
         self.assertEquals(rows, [("one", 1L, "cre", False)])
 
     def testGetRecordWithPath(self):
-        #getRecordWithPath(path)
+        """ Test retrieving records from database with the specified file path
+        Calling: B{getRecordWithPath(path)}
+        """
         self.writeTestRows()
         row = self.db.getRecordWithPath("one")
         self.assertEquals(row, ("one", 1L, "cre", False))
         row = self.db.getRecordWithPath("onex")
         self.assertEquals(row, None)
 
-
     def testClose(self):
+        """ Test closing database connection """
         self.db.close()
 
 
 
 def runUnitTests(locals):
+    """ Running unit test main method """
     print "\n\n\n\n"
     if sys.platform=="cli":
         print "---- Testing under IronPython ----"

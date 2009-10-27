@@ -1,4 +1,26 @@
 #!/usr/bin/env python
+#
+#    Copyright (C) 2009  ADFI,
+#    University of Southern Queensland
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+
+""" Unit test for config module
+@requires: sys, unittest, os, config
+"""
 
 import sys
 import unittest
@@ -9,6 +31,7 @@ from config import Config
 
 
 class ConfigTest(TestCase):
+    """ Config Unit test main class """
     # Config
     # Constructor:
     #   Config(fileSystem, configFileName="config.json", configFileSearchPaths=["."]):
@@ -27,6 +50,7 @@ class ConfigTest(TestCase):
         pass
 
     def testConfigFilePath(self):
+        """ Test on config file path """
         mockFileSystem = MockFileSystem(files={"/test/config.json": "{}"}, testHomePath="/test")
         config = Config(fileSystem=mockFileSystem)
         self.assertEquals(config.configFile, "/test/config.json")
@@ -41,6 +65,7 @@ class ConfigTest(TestCase):
 
 
     def testSettings(self):
+        """ Test on config settings """
         mockFileSystem = MockFileSystem(
                 files={"/test/config.json": '{"key":"value"}'},
                 testHomePath="/test")
@@ -51,6 +76,7 @@ class ConfigTest(TestCase):
 
 
     def testReload(self):
+        """ Test on reloading config file """
         mockFileSystem = MockFileSystem(
                 files={"/test/config.json": '{"key":"value"}'})
         config = Config(fileSystem=mockFileSystem)
@@ -63,6 +89,7 @@ class ConfigTest(TestCase):
 
 
     def testReloadWatcher(self):
+        """ Test on reloading watcher """
         mockFileSystem = MockFileSystem(
                 files={"/test/config.json": '{"key":"value"}'})
         config = Config(fileSystem=mockFileSystem)
@@ -78,6 +105,7 @@ class ConfigTest(TestCase):
 
 
 class MockFileSystem():
+    """ Mock File System class to accomodate the above config unit test """
     # Constructor:
     #   MockFileSystem(files={"/test/config.json": "{}"}, testHomePath="/test")
     # Methods:
@@ -86,13 +114,16 @@ class MockFileSystem():
     #   isFile(file)    -> True|False
     #   readFile(file)  -> data|None
     def __init__(self, files={}, testHomePath="/test"):
+        """ Constructor method for the MockFileSystem class """
         self.__testHomePath = testHomePath
         self.__files = files
 
     def join(self, *args):
+        """ join the file paths """
         return os.path.join(*args)
 
     def absPath(self, path):
+        """ get absolute path of the file """
         if path.startswith("/"):
             return os.path.abspath(path)
         else:
@@ -101,10 +132,12 @@ class MockFileSystem():
             return path
 
     def isFile(self, file):
+        """ Check if it's a file """
         file = self.absPath(file)
         return self.__files.has_key(file)
 
     def readFile(self, file):
+        """ read content of the file """
         if file is None:
             return None
         file = self.absPath(file)
@@ -112,6 +145,7 @@ class MockFileSystem():
         return data
 
     def writeFile(self, file, data):        # for testing only
+        """ write the content to config """
         file = self.absPath(file)
         self.__files[file] = data
 

@@ -64,14 +64,17 @@ class Watcher(object):
         self.__fs = FileSystem(".")
         self.__utils = Utils()
         self.__config = Config(fileSystem=self.__fs)
+        self.__dbFullFileame = None
         self.__db = None
         self.__controller = None
         self.__feeder = None
         self.__webServerShutdownMethod = None
+        self.__watcherProgDir = self.__fs.absPath(".").rstrip("/app")
         dbName = self.__config.watcher.get("db", "sqlite")
         sys.path.append("../db/%s" % dbName)
         Database = __import__(dbName).Database
-        dbFileName = self.__config.watcher.get("dbFile", "queue.db")
+        self.__dbFullFileame = self.__config.watcher.get("dbFile", "queue.db")
+        self.__dbFullFileame = self.__fs.absPath(self.__dbFullFileame)
 
 
         #------------------------
@@ -88,12 +91,14 @@ class Watcher(object):
             sys.stdout = w
             sys.stderr = w
         #------------------------
-        self.__db = Database(dbFileName)
+        self.__db = Database(self.__dbFullFileame)
         self.__controller = Controller(self.__db, self.__fs, self.__config, \
-                                FileWatcher, WatchDirectory, update=False)
+                                FileWatcher, WatchDirectory, update=False, \
+                                globalIgnoreFilter=self.__globalIgnoreFilter)
         #self.__controller.configChanged(config)
         #self.__config.addReloadWatcher(self.__controller.configChanged)
-        configWatcher = FileWatcher(self.__config.configFile, self.__fs)
+        configFile = self.__fs.absPath(self.__config.configFile)
+        configWatcher = FileWatcher(configFile, self.__fs)
         configWatcher.startWatching()
         def configChanged(file, eventName, **kwargs):
             #file=path, eventTime=eventTime, eventName=eventName, isDir=isDir, walk=False
@@ -121,12 +126,19 @@ class Watcher(object):
         sys.stderr = stderr
 
 
+    def __globalIgnoreFilter(self, fullFile):
+        if fullFile==self.__dbFullFileame or fullFile.startswith(self.__watcherProgDir):
+            return True
+        return False
+
+
     def __testListener(self, *args, **kwargs):
         path = kwargs.get("path")
         eTime = kwargs.get("eventTime")
         eName = kwargs.get("eventName")
         isDir = kwargs.get("isDir")
         print path, eTime, eName, isDir
+
 
 
 if __name__ == "__main__" or __name__=="<module>":

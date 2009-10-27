@@ -34,9 +34,12 @@ class Controller(object):
     #   _getRecordsCount(startingWithPath="")
     #   _updateWalk(watchDirectory)
     #   _updateHandler(file, eventTime, eventName, isDir=False, walk=False)
-    def __init__(self, db, fileSystem, config, Watcher, WatchDirectory, update=True):
+    def __init__(self, db, fileSystem, config, Watcher, WatchDirectory, \
+                update=True, globalIgnoreFilter=None):
+        #  globalIgnoreFilter(fullFile) (method) returns True if 'fullFile' should be ignored
         self.__db = db
         self.__fs = fileSystem          # .getModifiedTime(path), .walker(path, callback)
+        self.__globalIgnoreFilter = globalIgnoreFilter
         self.__Watcher = Watcher        # is a FileSystemWatcher
         self.__WatchDirectory = WatchDirectory
         self.__watchDirectories = self.__getWatchDirectoriesFromConfig(config)
@@ -174,6 +177,9 @@ class Controller(object):
 
 
     def _updateHandler(self, file, eventTime, eventName, isDir=False, walk=False):
+        if callable(self.__globalIgnoreFilter):
+            if self.__globalIgnoreFilter(file):
+                return
         if walk and isDir and eventName=="del":
             timeNow = self.__timeNow()
             updateList = []

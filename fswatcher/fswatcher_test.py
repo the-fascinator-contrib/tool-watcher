@@ -13,11 +13,11 @@ from unittest import TestCase
 import time
 
 if sys.platform=="cli":
-    sys.path.append("windows")
+    sys.path.append("ironPython")
     from ipFileWatcher import IPFileWatcher as FileWatcher
-elif sys.platform=="linux2":
-    sys.path.append("linux")
-    from linuxWatcher import EventWatcherClass as FileWatcher
+#elif sys.platform=="linux2":
+#    sys.path.append("linux")
+#    from linuxWatcher import EventWatcherClass as FileWatcher
 else:
     print "No FileWatcher defined for platform '%s'" % sys.platform
 #Constructor:

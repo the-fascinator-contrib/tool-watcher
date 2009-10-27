@@ -57,12 +57,12 @@ sys.path.append("../common")
 sys.path.append("../config")
 
 if sys.platform=="cli":
-    sys.path.append("../fswatcher/windows")
+    sys.path.append("../fswatcher/ironPython")
     from ipFileWatcher import IPFileWatcher as FileWatcher
-elif sys.platform=="linux2":
-    sys.path.append("../fswatcher/linux")
+#elif sys.platform=="linux2":
+#    sys.path.append("../fswatcher/linux")
     #from linuxWatcher import EventWatcherClass as FileWatcher
-    from iNotifyWatcher import INotifyWatcher as FileWatcher
+#    from iNotifyWatcher import INotifyWatcher as FileWatcher
 else:
     print "No FileWatcher defined for platform '%s'" % sys.platform
 

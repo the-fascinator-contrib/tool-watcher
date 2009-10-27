@@ -17,10 +17,14 @@
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
+""" Watch Directory Class to store directory information
+@requires: re
+"""
 import re
 
 
 class WatchDirectory(object):
+    """ Main class for WatchDirectory """
     # Constructor:
     #   WatchDirectory(path)
     # Properties:
@@ -36,6 +40,7 @@ class WatchDirectory(object):
     #   __cmp__
     #   __str__
     def __init__(self, path):
+        """ Constructor for Watch Directory """
         path = path.replace("\\", "/")
         if not path.endswith("/"):
             path += "/"
@@ -49,33 +54,41 @@ class WatchDirectory(object):
 
     @property
     def path(self):
+        """ Path of the directory """
         return self.__path
 
     def __getWatcher(self):
+        """ Get watcher for directory """
         return self.__watcher
     def __setWatcher(self, watcher):
+        """ Set watcher for the directory """
         if self.__watcher is not None:
             self.__watcher.close()
         self.__watcher = watcher
     watcher = property(__getWatcher, __setWatcher)
 
     def __getIgnoreFileFilter(self):
+        """ Get Ignore filter for file in the directory """
         return self.__ignoreFileFilter
     def __setIgnoreFileFilter(self, ignoreFileFilter):
+        """ Set Ignore filter for file in the directory """
         self.__ignoreFileFilter = ignoreFileFilter
         self.__fileFilter = self.__createFilterFrom(self.__ignoreFileFilter)
     ignoreFileFilter = property(__getIgnoreFileFilter, __setIgnoreFileFilter)
 
     def __getIgnoreDirectories(self):
+        """ Get Ignore filter for subdirectory in the directory """
         return "|".join(self.__ignoreDirectories)
     def __setIgnoreDirectories(self, ignoreDirectories):
+        """ Set Ignore filter for subdirectory in the directory """
         self.__ignoreDirectories = ignoreDirectories.split("|")
     ignoreDirectories = property(__getIgnoreDirectories, __setIgnoreDirectories)
 
     
     def filter(self, file):
-        """
-        returns False is we should be ignoring this file/dir
+        """ Filter files and subdirectory from the directory
+        @return: False is we should be ignoring this file/dir
+        @rtype: boolean
         """
         file = file[len(self.__path):]
         file = file.replace("\\", "/")
@@ -95,10 +108,12 @@ class WatchDirectory(object):
 
     
     def addListener(self, listener):
+        """ Add listener to the directory """
         self.__listeners.append(listener)
 
 
     def removeListener(self, listener):
+        """ Remove listener to the directory """
         if self.__listeners.count(listener)>0:
             self.__listeners.remove(listener)
             return True
@@ -106,6 +121,7 @@ class WatchDirectory(object):
 
     
     def updateHandler(self, file, eventTime, eventName, isDir=False, walk=False):
+        """ Update the handler """
         if self.filter(file):
             for listener in self.__listeners:
                 listener(file=file, eventTime=eventTime, eventName=eventName, \

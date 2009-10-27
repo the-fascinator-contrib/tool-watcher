@@ -1,4 +1,26 @@
 #!/usr/bin/python
+#
+#    Copyright (C) 2009  ADFI,
+#    University of Southern Queensland
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+
+""" Watch Directory Unit Test module
+@requires: sys, unittest, watchDirectory
+"""
 
 import sys
 if sys.platform=="cli":
@@ -29,7 +51,9 @@ from watchDirectory import WatchDirectory
 
 
 class WatchDirectoryTest(TestCase):
+    """ Watch Directory Test Main Class """
     def testProperties(self):
+        """ Test to check on properties """
         wd = WatchDirectory("/test/one")
         self.assertEquals(wd.path, "/test/one/")
         wd.watcher = "x"
@@ -40,6 +64,7 @@ class WatchDirectoryTest(TestCase):
         self.assertEquals(wd.ignoreDirectories, "temp|tmp")
 
     def testFilter(self):
+        """ Test filter file """
         wd = WatchDirectory("/test/one/")
         wd.ignoreFileFilter = "*.tmp|test"
         wd.ignoreDirectories="temp|tmp|one"
@@ -48,7 +73,9 @@ class WatchDirectoryTest(TestCase):
         self.assertFalse(wd.filter("/test/one/subdir/one/test.txt"))
 
     def testListenerUpdateHandler(self):
-        #   updateHandler(file, eventTime, eventName, isDir=False, walk=False)
+        """ Test update handler 
+            Calling: B{updateHandler(file, eventTime, eventName, isDir=False, walk=False)}
+        """
         wd = WatchDirectory("/test/one/")
         wd.ignoreFileFilter = "*.tmp|test"
         wd.ignoreDirectories="temp|tmp|one"
@@ -64,6 +91,7 @@ class WatchDirectoryTest(TestCase):
 
 
 def runUnitTests(locals):
+    """ Main class to run unit test """
     print "\n\n\n\n"
     if sys.platform=="cli":
         print "---- Testing under IronPython ----"

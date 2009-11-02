@@ -1,4 +1,3 @@
-#!/usr/bin/python
 #
 #    Copyright (C) 2009  ADFI,
 #    University of Southern Queensland
@@ -18,13 +17,13 @@
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-""" Webserver main class to return json feed """
-
 import BaseHTTPServer
 import os
 import sys
 import threading
 import time
+
+
 
 class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     feeder = None
@@ -69,7 +68,7 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def __getJsonFeed(self, fromDate, toDate):
         #lastModifiedFile = self.feeder.lastModifiedTimeStamp()
         def compare(a, b):
-            return cmp(a[1], b[1])
+            return cmp(b[1], a[1])
         try:
             lastModified = self.feeder.formatDateTime(time.time(), utc=True)
             rows = self.feeder.getFeed(fromDate, toDate)
@@ -99,7 +98,7 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def __getHtmlFeed(self, fromDate, toDate):
         def compare(a, b):
-            return cmp(a[1], b[1])
+            return cmp(b[1], a[1])
         try:
             rows = self.feeder.getFeed(fromDate, toDate, True)
             rows.sort(compare)

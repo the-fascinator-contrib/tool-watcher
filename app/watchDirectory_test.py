@@ -18,10 +18,6 @@
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-""" Watch Directory Unit Test module
-@requires: sys, unittest, watchDirectory
-"""
-
 import sys
 if sys.platform=="cli":
     if sys.version.startswith("2.4"):
@@ -51,9 +47,7 @@ from watchDirectory import WatchDirectory
 
 
 class WatchDirectoryTest(TestCase):
-    """ Watch Directory Test Main Class """
     def testProperties(self):
-        """ Test to check on properties """
         wd = WatchDirectory("/test/one")
         self.assertEquals(wd.path, "/test/one/")
         wd.watcher = "x"
@@ -64,7 +58,6 @@ class WatchDirectoryTest(TestCase):
         self.assertEquals(wd.ignoreDirectories, "temp|tmp")
 
     def testFilter(self):
-        """ Test filter file """
         wd = WatchDirectory("/test/one/")
         wd.ignoreFileFilter = "*.tmp|test"
         wd.ignoreDirectories="temp|tmp|one"
@@ -73,9 +66,7 @@ class WatchDirectoryTest(TestCase):
         self.assertFalse(wd.filter("/test/one/subdir/one/test.txt"))
 
     def testListenerUpdateHandler(self):
-        """ Test update handler 
-            Calling: B{updateHandler(file, eventTime, eventName, isDir=False, walk=False)}
-        """
+        #   updateHandler(file, eventTime, eventName, isDir=False, walk=False)
         wd = WatchDirectory("/test/one/")
         wd.ignoreFileFilter = "*.tmp|test"
         wd.ignoreDirectories="temp|tmp|one"
@@ -91,7 +82,6 @@ class WatchDirectoryTest(TestCase):
 
 
 def runUnitTests(locals):
-    """ Main class to run unit test """
     print "\n\n\n\n"
     if sys.platform=="cli":
         print "---- Testing under IronPython ----"

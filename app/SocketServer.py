@@ -558,7 +558,6 @@ class StreamRequestHandler(BaseRequestHandler):
     def setup(self):
         self.connection = self.request
         self.rfile = self.connection.makefile('rb', self.rbufsize)
-        ## This is modified as mono in Mac OS X will complain if the self.wbufsize is provided
         #self.wfile = self.connection.makefile('wb', self.wbufsize)
         self.wfile = self.connection.makefile('wb')
 

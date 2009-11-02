@@ -20,7 +20,6 @@
 """ Feeder Module to get Json feed """
 
 class Feeder(object):
-    """ Feeder main class """
     def __init__(self, utils, controller):
         """ Constructor method for Feeder class
         Feeder(utils, controller)
@@ -40,6 +39,7 @@ class Feeder(object):
         @return: list of rows
         @rtype: list
         """
+        # fromDate and toDate will be string arguments
         fromDate = self.convertGMTToInteger(fromDate)
         if toDate is not None:
             toDate = self.convertGMTToInteger(toDate)

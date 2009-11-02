@@ -17,12 +17,6 @@
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-""" Queue/Controller module acts as a handler to receive
-file system event and pass the queue events to the database
-to be stored
-@required: time
-"""
-
 import time
 
 
@@ -40,12 +34,9 @@ class Controller(object):
     #   _getRecordsCount(startingWithPath="")
     #   _updateWalk(watchDirectory)
     #   _updateHandler(file, eventTime, eventName, isDir=False, walk=False)
-    def __init__(self, db, fileSystem, config, Watcher, WatchDirectory, \
-                update=True, globalIgnoreFilter=None):
-        #  globalIgnoreFilter(fullFile) (method) returns True if 'fullFile' should be ignored
+    def __init__(self, db, fileSystem, config, Watcher, WatchDirectory, update=True):
         self.__db = db
         self.__fs = fileSystem          # .getModifiedTime(path), .walker(path, callback)
-        self.__globalIgnoreFilter = globalIgnoreFilter
         self.__Watcher = Watcher        # is a FileSystemWatcher
         self.__WatchDirectory = WatchDirectory
         self.__watchDirectories = self.__getWatchDirectoriesFromConfig(config)
@@ -62,12 +53,11 @@ class Controller(object):
 
     @property
     def watchDirectories(self):
-        """ Watched directories dictionary """
         return self.__watchDirectories
 
 
     def configChanged(self, config):
-        """ look for watchDirectories to Start and Stop watching """
+        # look for watchDirectories to Start and Stop watching
         watchDirectories = self.__getWatchDirectoriesFromConfig(config)
         currentWatchedPaths = self.__watchDirectories.keys()
         for wd in watchDirectories.itervalues():
@@ -89,8 +79,7 @@ class Controller(object):
 
 
     def startWatching(self, watchDirectory):
-        """ Start watching directories.  
-        Remove all paths that are watched by any other watchDirectories """
+        ## Remove all paths that are watched by any other watchDirectories
         print "startWatching '%s'" % watchDirectory.path
         self.__watchDirectories[watchDirectory.path] = watchDirectory
         self.__watch(watchDirectory)
@@ -98,7 +87,6 @@ class Controller(object):
 
     
     def stopWatching(self, watchDirectory):
-        """ Stop Watching directories """
         print "stopWatching '%s'" % watchDirectory.path
         if self.__watchDirectories.has_key(watchDirectory.path):
             self.__watchDirectories.pop(watchDirectory.path)
@@ -124,20 +112,11 @@ class Controller(object):
 
 
     def getRecordsFromDate(self, fromDate=0, toDate=None):
-        """ Get records starting from the specified date
-        @param fromDate: from date in numbers in seconds
-        @type fromDate: integer
-        @param toDate: to date in numbers in seconds
-        @type toDate: integer
-        @return: list of found records
-        @rtype: list 
-        """
         rows = self.__db.getRecordsFromDate(fromDate, toDate)
         return rows
 
 
     def close(self):
-        """ Close the watcher listener and database connection """
         for watchDirectory in self.__watchDirectories.itervalues():
             watcher = watchDirectory.watcher
             if watcher is not None:
@@ -146,12 +125,6 @@ class Controller(object):
 
 
     def _getRecordsCount(self, startingWithPath=""):
-        """ Get the number of records with specified starting path
-        @param startingWithPath: filter with starting path, defaulted to ""
-        @type startingWithPath: String
-        @return: number of records found
-        @rtype: integer
-        """
         rows = self.__db.getRecordsStartingWithPath(startingWithPath)
         return len(rows)
 
@@ -201,9 +174,6 @@ class Controller(object):
 
 
     def _updateHandler(self, file, eventTime, eventName, isDir=False, walk=False):
-        if callable(self.__globalIgnoreFilter):
-            if self.__globalIgnoreFilter(file):
-                return
         if walk and isDir and eventName=="del":
             timeNow = self.__timeNow()
             updateList = []

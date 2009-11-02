@@ -45,6 +45,7 @@ try:
 except:
     pass
 import os
+import time
 
 if sys.platform!="cli":
     raise Exception("Currently this program can only run under IronPython (under the Windows or Mono .NET framework)")
@@ -54,7 +55,7 @@ sys.path.append("../common")
 sys.path.append("../config")
 
 if sys.platform=="cli":
-    sys.path.append("../fswatcher/windows")
+    sys.path.append("../fswatcher/ironPython")
     from ipFileWatcher import IPFileWatcher as FileWatcher
 elif sys.platform=="linux2":
     sys.path.append("../fswatcher/linux")
@@ -133,10 +134,11 @@ class Watcher(object):
 
 
     def close(self):
+        print "FileWatcher closing"
         self.__configWatcher.close()
         self.__controller.close()
         self.__webServerShutdownMethod()
-        print "FileWatcher Closed"
+        print "FileWatcher closed"
         #print self.__controller._getRecordsCount()
         #print self.queue.getFromDate(0)
 
@@ -203,7 +205,10 @@ def notify(watcher):
     from System.Drawing import Icon
     notify = NotifyIcon()
     notify.Text = "FileWatcher"
-    notify.Icon = Icon("watcher.ico")
+    try:
+        notify.Icon = Icon("watcher.ico")
+    except:
+        notify.Icon = Icon("watcher2.ico")
     notify.Visible = True
     notify.BalloonTipTitle = "FileWatcher"
     notify.BalloonTipText = "serving on http://%s:%s" % (watcher.host, watcher.port)
@@ -217,6 +222,8 @@ def notify(watcher):
     notify.ContextMenu.MenuItems.Add(mItem)
     mItem.Text = "E&xit"
     def exit(sender, eArgs):
+        watcher.close()
+        time.sleep(1)
         Application.Exit()
     mItem.Click += exit
     extras(notify.ContextMenu.MenuItems, watcher)
@@ -237,8 +244,14 @@ def extras(menuItems, watcher):
         mItem.Click += mclick
     if True:
         def editConfig(sender, eArgs):
-            configFile = watcher.configFile.replace("/", "\\")
-            os.system(r'"c:\Program Files\Windows NT\Accessories\wordpad.exe" %s' % configFile)
+            configFile = watcher.configFile.replace("/", os.sep)
+            try:
+                if hasattr(os, "system"):
+                    os.system(r'"c:\Program Files\Windows NT\Accessories\wordpad.exe" %s' % configFile)
+                elif hasattr(os, "startfile"):
+                    os.startfile("gedit %s" % configFile)
+            except Exception, e:
+                print "Failed to start edittor - %s" % str(e)
         mItem2 = MenuItem()
         menuItems.Add(mItem2)
         mItem2.Text = "Edit config file"
@@ -265,12 +278,14 @@ if __name__ == "__main__" or __name__=="<module>":
     logger = Logger("log.txt")
     watcher = Watcher(logger)
     try:
+        if len(sys.argv)>1 and sys.argv[1]=="notify":
+            raise Exception("notify")
         t = time.time()
         x = raw_input("Press enter to exit...")
         if time.time()-t<.1:
             raise Exception("")
     except:
-        if sys.platform=="cli" and os.sep=="\\":        # Windows
+        if sys.platform=="cli":# and os.sep=="\\":        # Windows
             notify(watcher)
         else:
             while True:

@@ -113,11 +113,12 @@ class IPFileWatcher(object):
     
     def __onRenamed(self, source, e):
         #print "__onRenamed event"
-        path = self.__fs.split(e.OldFullPath)[0]
-        ev = FileSystemEventArgs(WatcherChangeTypes.Deleted, path, e.OldName)
-        self.__onChanged(source, ev)
+        print " rename oldName=%s, name=%s" % (e.OldFullPath, e.FullPath)
         path = self.__fs.split(e.FullPath)[0]
         ev = FileSystemEventArgs(WatcherChangeTypes.Created, path, e.Name)
+        self.__onChanged(source, ev)
+        path = self.__fs.split(e.OldFullPath)[0]
+        ev = FileSystemEventArgs(WatcherChangeTypes.Deleted, path, e.OldName)
         self.__onChanged(source, ev)
     
     

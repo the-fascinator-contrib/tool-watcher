@@ -56,7 +56,8 @@ class Feeder(object):
             else:
                 file = "file:///" + file
             row[0] = file
-            row[1] = int(row[1])        # To convert from Int64(IronPython) to just long
+            #row[1] = int(row[1])        # To convert from Int64(IronPython) to just long
+            row[1] = self.formatDateTime(row[1])
         return rows
 
 
@@ -89,7 +90,9 @@ class Feeder(object):
         @return: formatted time stamp
         @rtype: String
         """
-        return self.__utils.convertGMTToInteger(timeStr)
+        r = self.__utils.convertGMTToInteger(timeStr)
+        print "%s - %s" % (timeStr, r)
+        return r
 
 
     def convertToJson(self, data):

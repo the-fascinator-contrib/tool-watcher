@@ -43,12 +43,13 @@ class Controller(object):
         #config.addConfigChangeWatcher(self.__)
         for watchDirectory in self.__watchDirectories.values():
             # check to see if we are conintue watching or are starting watching
-            if self.__isStartWatch(watchDirectory):
-                self.startWatching(watchDirectory)
-            else:
-                self.__watch(watchDirectory)
-                if update:
-                    self._updateWalk(watchDirectory)
+            if not watchDirectory.stop:
+                if self.__isStartWatch(watchDirectory):
+                    self.startWatching(watchDirectory)
+                else:
+                    self.__watch(watchDirectory)
+                    if update:
+                        self._updateWalk(watchDirectory)
 
 
     @property
@@ -213,9 +214,13 @@ class Controller(object):
                 #print "path='%s', d='%s'" % (path, d)
                 ignoreFileFilter = d.get("ignoreFileFilter", "")
                 ignoreDirectories = d.get("ignoreDirectories", "")
+                stop = d.get("stop", 0)
+                cxtTags = d.get("cxtTags", [])
                 watchDir =  self.__WatchDirectory(path)
                 watchDir.ignoreFileFilter = ignoreFileFilter
                 watchDir.ignoreDirectories = ignoreDirectories
+                watchDir.stop = stop
+                watchDir.cxtTags = cxtTags
                 watchDirectories[watchDir.path] = watchDir
         except Exception, e:
             print str(e)

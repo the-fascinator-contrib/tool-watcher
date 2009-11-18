@@ -45,6 +45,8 @@ class WatchDirectory(object):
         self.__ignoreDirectories = []
         self.__listeners = []
         self.__fileFilter = self.__createFilterFrom(self.__ignoreFileFilter)
+        self.__stop = False
+        self.__cxtTags = []
 
 
     @property
@@ -73,6 +75,26 @@ class WatchDirectory(object):
         while self.__ignoreDirectories.count(""):
             self.__ignoreDirectories.remove("")
     ignoreDirectories = property(__getIgnoreDirectories, __setIgnoreDirectories)
+
+    def __getStop(self):
+        return self.__stop
+    def __setStop(self, value):
+        value = int(bool(value))
+        self.__stop = value
+    stop = property(__getStop, __setStop)
+
+    def __getContextTags(self):
+        return self.__cxtTags
+    def __setContextTags(self, value):
+        typeStr = str(type(value))
+        if typeStr.find("dict")!=-1 or \
+                typeStr.find("list")!=-1 or \
+                typeStr.find("tuple")!=-1:
+            value = list(value)
+        else:
+            value = [str(value)]
+        self.__cxtTags = value
+    contextTags = property(__getContextTags, __setContextTags)
 
     
     def filter(self, file):
@@ -155,8 +177,10 @@ class WatchDirectory(object):
 
 
     def __str__(self):
-        s = "[WatcherDirectory] path='%s' ignoreFileFilter='%s', ignoreDirectries=%s"
-        return s % (self.path, self.__ignoreFileFilter, self.__ignoreDirectories)
+        #s = "[WatcherDirectory] path='%s' ignoreFileFilter='%s', ignoreDirectries=%s"
+        #return s % (self.path, self.__ignoreFileFilter, self.__ignoreDirectories)
+        s = self.path
+        return s
 
 
 

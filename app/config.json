@@ -6,7 +6,9 @@
                                     "../watchThis":
                                         {
                                          "ignoreFileFilter": "*.tmp|$*.*",
-                                         "ignoreDirectories": "tmp|temp"
+                                         "ignoreDirectories": "tmp|temp",
+                                         "cxtTags": [],
+                                         "stopped" : 0
                                         }
                                 },			  
 				  "feedservice" : { "host" : "localhost",

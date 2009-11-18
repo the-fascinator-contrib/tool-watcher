@@ -22,6 +22,7 @@ import os
 import sys
 import threading
 import time
+from urllib import unquote
 
 
 
@@ -31,44 +32,71 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_GET(self):
         fromDate = self.headers.getheader("Last-Modified")
         toDate = None
-        path = self.path.strip("/")
-        parts = path.split("/")
-        if fromDate is None and parts[-1].startswith("20"):
-            fromDate = parts[-1].replace("%20", " ").replace("+", " ")
-        if fromDate is None:
-            fromDate = "1970-01-01"
-        if parts[0]=="test":
-            self.__test(path, fromDate)
-        elif parts[0]=="count":
-            self.__getCount(parts[1:])
-        elif parts[0]=="html":
+        path = unquote(self.path).replace("+", " ")
+        fromDate, toDate, cmd = self.__getFromPath(path, fromDate)
+
+        if cmd=="test":
+            self.__test(path, fromDate, toDate)
+        elif cmd=="count":
+            self.__getCount()
+        elif cmd=="html":
             self.__getHtmlFeed(fromDate, toDate)
-        elif parts[0]=="name":
+        elif cmd=="text":
+            self.__getTextFeed(fromDate, toDate)
+        elif cmd=="name":
             self.__name()
-        elif parts[0]=="time":
+        elif cmd=="time":
             self.__time()
-        elif parts[0]=="shutdown":
+        elif cmd=="shutdown":
             self.shutdown()
         else:
             self.__getJsonFeed(fromDate, toDate)
 
-    def __test(self, path, fromDate):
-        print "path='%s', fromDate='%s'" % (path, fromDate)
+    def __getFromPath(self, path, fromDate):
+        toDate = None
+        cmd = None
+        parts = path.split("/")
+        for part in parts:
+            if part=="":
+                continue
+            if part[0].isdigit():
+                if fromDate is None:
+                    fromDate = part
+                elif toDate is None:
+                    toDate = part
+            elif part.isalpha():
+                if cmd is None:
+                    cmd = part
+        if fromDate is None:
+            fromDate = "1970-01-01"
+        return fromDate, toDate, cmd
+
+    def __test(self, path, fromDate, toDate):
         self.send_response(200, "OK")
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        secs = self.feeder.convertGMTToInteger(fromDate)
-        s = "path='%s', fromDate='%s'\n  Secs=%s\n%s"
-        data = ""
-        if self.path=="/dir":
-            data = "dir=" + str(dir(self.httpd))
-        s = s % (path, fromDate, secs, data)
+        s = "TEST path='%s', fromDate='%s', toDate='%s'" % (path, fromDate, toDate)
+        s += "\n"
+        if fromDate is not None:
+            try:
+                secs = self.feeder.convertGMTToInteger(fromDate)
+            except:
+                secs = "?"
+            s += ("fromDate='%s'  Secs=%s\n" % (fromDate, secs))
+        if toDate is not None:
+            try:
+                secs = self.feeder.convertGMTToInteger(toDate)
+            except:
+                secs = "?"
+            s += ("toDate='%s'  Secs=%s\n" % (toDate, secs))
+        print s
+        s = s.replace("\n", "<br/>")
         self.wfile.write(s)
 
     def __getJsonFeed(self, fromDate, toDate):
         #lastModifiedFile = self.feeder.lastModifiedTimeStamp()
         def compare(a, b):
-            return cmp(b[1], a[1])
+            return cmp(a[1], b[1])
         try:
             lastModified = self.feeder.formatDateTime(time.time(), utc=True)
             rows = self.feeder.getFeed(fromDate, toDate)
@@ -97,57 +125,64 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 
     def __getHtmlFeed(self, fromDate, toDate):
+        data = self.__getFeedText(fromDate, toDate)
+        self.__write(data, contentType="text/html")
+
+    def __getTextFeed(self, fromDate, toDate):
+        data = self.__getFeedText(fromDate, toDate)
+        self.__write(data, contentType="text/plain")
+
+    def __getFeedText(self, fromDate, toDate):
         def compare(a, b):
-            return cmp(b[1], a[1])
+            return cmp(a[1], b[1])
         try:
             rows = self.feeder.getFeed(fromDate, toDate, True)
             rows.sort(compare)
             data = ""
             for file, eventTime, eventName, isDir in rows:
                 data += "%s, %s, %s, %s\n" % (eventTime, eventName, file, isDir)
-            data = BaseHTTPServer._quote_html(data).replace("\n", "<br/>")
+            data = BaseHTTPServer._quote_html(data)
             #if True:
             try:
                 if rows==[]:
-                    t = self.feeder.convertGMTToInteger(fromDate)
+                    lastModified = fromDate
+                    #lastModified = self.feeder.formatDateTime(fromDate, utc=True)
                 else:
-                    t = rows[-1][1]
-                lastModified = self.feeder.formatDateTime(t, utc=True)
-                data += "<br/>lastModified=%s" % lastModified
+                    lastModified = rows[-1][1]
+                data += "\nlastModified = %s" % lastModified
             except Exception, e:
                 print str(e)
                 print "t='%s'" % t
         except Exception, e:
             data = str({"Error": str(e)})
-        self.__htmlWrite(data)
+        return data
 
-    def __getCount(self, parts):
+    def __getCount(self, path="/"):
         try:
-            path = "/" + "/".join(parts)
             print "getCount path='%s'" % path
             data = "FileCount=%s" % self.feeder.getFileCount(path)
         except Exception, e:
             data = str({"Error": str(e)})
-        self.__htmlWrite(data)
+        self.__write(data)
 
     def __name(self):
         name = os.environ.get("COMPUTERNAME", "?")
-        self.__htmlWrite("ComputerName='%s', platform='%s'" % (name, sys.platform))
+        self.__write("ComputerName='%s', platform='%s'" % (name, sys.platform))
 
     def __time(self):
         data = "CurrentTime=%s" % self.feeder.formatDateTime()
         data += ", GMT = %s" % self.feeder.formatDateTime(utc=True)
-        self.__htmlWrite(data)
+        self.__write(data)
 
-    def __htmlWrite(self, data):
+    def __write(self, data, contentType="text/html"):
         self.send_response(200, "OK")
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", contentType)
         self.end_headers()
         self.wfile.write(data)
 
     def shutdown(self):
             print "shutdown requested"
-            self.__htmlWrite("Shutdown")
+            self.__write("Shutdown")
             def shutdown():
                 try:
                     self.httpd.shutdown()

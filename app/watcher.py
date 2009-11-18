@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/ipy
 #
 #    Copyright (C) 2009  ADFI,
 #    University of Southern Queensland
@@ -72,6 +72,7 @@ from watchDirectory import WatchDirectory
 #   #Controller(db, fileSystem, config, Watcher, WatchDirectory, update=True)
 from feeder import Feeder           # Feeder(utils, controller)
 from webServer import webServe      # webServe(host, port, feeder) -> shutdownMethod
+import configForm
 
 
 
@@ -216,19 +217,32 @@ def notify(watcher):
     #    notify.BalloonTipText += "\nwatching: %s" % wd
     def click(sender, eArgs):
         notify.ShowBalloonTip(3000)
-    notify.Click += click
+    notify.DoubleClick += click
+    #
     notify.ContextMenu = ContextMenu()
     mItem = MenuItem()
     notify.ContextMenu.MenuItems.Add(mItem)
     mItem.Text = "E&xit"
     def exit(sender, eArgs):
+        notify.Dispose()
         watcher.close()
-        time.sleep(1)
+        time.sleep(5)
         Application.Exit()
     mItem.Click += exit
     extras(notify.ContextMenu.MenuItems, watcher)
-    Application.Run()
-    notify.Dispose()
+    #
+    mItem = MenuItem(Text="&Config")
+    notify.ContextMenu.MenuItems.Add(mItem)
+    def configClick(s, e):
+        cForm = configForm.ConfigForm(watcher)
+        #cForm.Show()
+    mItem.Click += configClick
+    #
+    try:
+        Application.Run()
+        notify.Dispose()
+    except Exception, e:
+        print "Closing.."
 
 def extras(menuItems, watcher):
     from System.Windows.Forms import MenuItem, MessageBox, FolderBrowserDialog
@@ -278,18 +292,21 @@ if __name__ == "__main__" or __name__=="<module>":
     logger = Logger("log.txt")
     watcher = Watcher(logger)
     try:
-        if len(sys.argv)>1 and sys.argv[1]=="notify":
+        if len(sys.argv)>1 and sys.argv[1]=="no-notify":
+            pass
+        else:
             raise Exception("notify")
         t = time.time()
         x = raw_input("Press enter to exit...")
         if time.time()-t<.1:
             raise Exception("")
+        watcher.close()
     except:
         if sys.platform=="cli":# and os.sep=="\\":        # Windows
             notify(watcher)
         else:
             while True:
                 time.sleep(1)
-    watcher.close()
+            watcher.close()
 
 

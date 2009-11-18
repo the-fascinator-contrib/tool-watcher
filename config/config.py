@@ -182,6 +182,32 @@ class Config(object):
         """ Config settings Dictionary """
         return self.__settings
 
+    def save(self):
+        s = str(self.settings)
+        s = self._format(s)
+        self.__fileSystem.writeFile(self.__configFile, s)
+
+    @staticmethod
+    def _format(s):
+        def gen():
+            for c in s:
+                yield c
+        def f(g, l=0):
+            if l:
+                n = "\n" + "    " * l
+            else:
+                n = ""
+            c = n
+            for r in g:
+                if r=="{":
+                    c += n + "{" + f(g, l+1) + n + "}" + n
+                elif r=="}":
+                    return c
+                else:
+                    c += r
+            return c
+        return f(gen())
+
     def __getConfigData(self):
         """ Get config file content """
         data = self.__fileSystem.readFile(self.__configFile)

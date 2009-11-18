@@ -108,11 +108,8 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             try:
                 lastModified = self.feeder.formatDateTime(t, utc=True)
             except:
-                #print "lastModified='%s'" % t
-                t = self.feeder.convertGMTToInteger(fromDate)
-                #print "lastModified='%s'" % t
-                lastModified = self.feeder.formatDateTime(t, utc=True)
-                #print "lastModified='%s'" % t
+                i = self.feeder.convertGMTToInteger(t)
+                t = self.feeder.formatDateTime(i, utc=True)
                 lastModified = t
             data = rows
             # change to a dictionary of dictionaries  e.g. {file:{time:.., state:...}, ...}
@@ -128,7 +125,7 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200, "OK")
         self.send_header("Content-type", "application/json")
         #self.send_header("Content-type", "text/html")
-        #self.send_header("Last-Modified", lastModified)
+        self.send_header("Last-Modified", lastModified)
         self.end_headers()
         self.wfile.write(data)
 

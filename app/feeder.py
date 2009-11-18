@@ -91,7 +91,7 @@ class Feeder(object):
         @rtype: String
         """
         r = self.__utils.convertGMTToInteger(timeStr)
-        print "%s - %s" % (timeStr, r)
+        #print "%s - %s" % (timeStr, r)
         return r
 
 

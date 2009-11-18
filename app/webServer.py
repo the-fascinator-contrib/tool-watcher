@@ -105,7 +105,15 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 t = self.feeder.convertGMTToInteger(fromDate)
             else:
                 t = rows[-1][1]
-            lastModified = self.feeder.formatDateTime(t, utc=True)
+            try:
+                lastModified = self.feeder.formatDateTime(t, utc=True)
+            except:
+                #print "lastModified='%s'" % t
+                t = self.feeder.convertGMTToInteger(fromDate)
+                #print "lastModified='%s'" % t
+                lastModified = self.feeder.formatDateTime(t, utc=True)
+                #print "lastModified='%s'" % t
+                lastModified = t
             data = rows
             # change to a dictionary of dictionaries  e.g. {file:{time:.., state:...}, ...}
             data = dict([(f, {"time":t, "state":s}) for f, t, s in rows])
@@ -115,11 +123,12 @@ class ServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 print "__getJsonFeed   %s" % str(e)
                 data = str(data)
         except Exception, e:
+            print str(e)
             data = str({"Error": str(e)})
         self.send_response(200, "OK")
         self.send_header("Content-type", "application/json")
         #self.send_header("Content-type", "text/html")
-        self.send_header("Last-Modified", lastModified)
+        #self.send_header("Last-Modified", lastModified)
         self.end_headers()
         self.wfile.write(data)
 

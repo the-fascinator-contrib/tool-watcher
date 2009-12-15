@@ -46,6 +46,7 @@ class Controller(object):
     def __init__(self, db, fileSystem, config, Watcher, WatchDirectory, update=True):
         self.__db = db
         self.__fs = fileSystem          # .getModifiedTime(path), .walker(path, callback)
+        self.__stomp = None
         if config.messaging.enabled:
             self.__stomp = StompClient(config)
         self.__Watcher = Watcher        # is a FileSystemWatcher

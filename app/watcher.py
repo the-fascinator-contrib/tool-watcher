@@ -91,7 +91,7 @@ class Watcher(object):
         self.__logger = logger
         self.__configWatcher = None
         dbName = self.__config.watcher.get("db", "sqlite")
-        sys.path.append("../db/%s" % dbName)
+        sys.path.insert(0, "../db/%s" % dbName)
         Database = __import__(dbName).Database
         dbFileName = self.__config.watcher.get("dbFile", "queue.db")
 

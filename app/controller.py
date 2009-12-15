@@ -17,7 +17,16 @@
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-import time
+import os, time
+
+try:
+    from json import loads, dumps
+except:
+    from json2_5 import loads, dumps
+
+import sys
+sys.path.append("Lib")
+import stomp
 
 
 class Controller(object):
@@ -37,6 +46,8 @@ class Controller(object):
     def __init__(self, db, fileSystem, config, Watcher, WatchDirectory, update=True):
         self.__db = db
         self.__fs = fileSystem          # .getModifiedTime(path), .walker(path, callback)
+        if config.messaging.enabled:
+            self.__stomp = StompClient(config)
         self.__Watcher = Watcher        # is a FileSystemWatcher
         self.__WatchDirectory = WatchDirectory
         self.__watchDirectories = self.__getWatchDirectoriesFromConfig(config)
@@ -109,7 +120,7 @@ class Controller(object):
             else:
                 eventName = "stop"
             uList.append((file, timeNow, eventName, isDir))
-        self.__db.updateList(uList)
+        self.__updatedb(uList)
 
 
     def getRecordsFromDate(self, fromDate=0, toDate=None):
@@ -171,7 +182,7 @@ class Controller(object):
         for file, _, _, isDir in dfiles.itervalues():
             print "deleting '%s'" % file
             updateList.append((file, timeNow, "del", isDir))
-        self.__db.updateList(updateList)
+        self.__updatedb(updateList)
 
 
     def _updateHandler(self, file, eventTime, eventName, isDir=False, walk=False):
@@ -182,11 +193,19 @@ class Controller(object):
             for f, eTime, eName, d in rows:
                 if not eName.startswith("stop"):
                     updateList.append(f, timeNow, "del", d)
-            self.__db.updateList(updateList)
+            self.__updatedb(updateList)
         else:
-            self.__db.updateList([(file, eventTime, eventName, isDir)])
+            self.__updatedb([(file, eventTime, eventName, isDir)])
 
-    
+
+    def __updatedb(self, uList):
+        self.__db.updateList(uList)
+        if self.__stomp is not None:
+            for file, eventTime, eventName, isDir in uList:
+                file = file.replace("'", "''").replace("\\", "/")
+                if not isDir:
+                    self.__stomp.queueUpdate(file, eventName)
+
     def __watch(self, watchDirectory):
         #print "__watch '%s'" % watchDirectory
         try:
@@ -231,6 +250,38 @@ class Controller(object):
         return int(time.time())
 
 
+class StompClient(object):
+    def __init__(self, config):
+        self.__config = config
+        self.__open()
+    
+    def __open(self):
+        """ Connect to stomp server """
+        print "Connecting to STOMP server..."
+        self.__stomp = stomp.Connection()
+        self.__stomp.start()
+        self.__stomp.connect()
+    
+    def stop(self):
+        if self.__stomp is not None:
+            print "Disconnecting from STOMP server..."
+            self.__stomp.stop()
+    
+    def queueUpdate(self, file, eventName):
+        print "Queuing '%s' for '%s'" % (eventName, file)
+        configFile = self.__config.messaging.get("configFile")
+        if configFile is None:
+            print "No messaging configFile defined!"
+        else:
+            fp = open(configFile)
+            jsonConf = loads(fp.read())
+            fp.close()
+            jsonConf["source"] = "watcher"
+            jsonConf["configDir"] = os.path.split(configFile)[0]
+            jsonConf["oid"] = file
+            if eventName == "del":
+                jsonConf["deleted"] = "true"
+            self.__stomp.send(dumps(jsonConf), destination="/queue/harvest")
 
 
 

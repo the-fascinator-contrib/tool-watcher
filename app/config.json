@@ -9,7 +9,7 @@
 				"ignoreDirectories": "tmp|temp|.svn|.ice",
 				"cxtTags": [],
 				"stopped": 0
-			},
+			}
 		},
 		"feedservice": {
 			"host": "localhost",

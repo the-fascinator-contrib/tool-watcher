@@ -30,10 +30,14 @@ try:
     logging.config.fileConfig('stomp.log.conf')
 except:
     pass      
-log = logging.getLogger('stomp.py')
-if not log:
+try:
+    sys._getframe()
+    log = logging.getLogger('stomp.py')
+except ValueError:
     log = DevNullLogger()
 
+if not log:
+    log = DevNullLogger()
 
 class Connection(object):
     """
@@ -481,7 +485,7 @@ class Connection(object):
                             continue
                         else:
                             break
-            except:
+            except Exception, e:
                 log.exception("An unhandled exception was encountered in the stomp receiver loop")
 
         finally:

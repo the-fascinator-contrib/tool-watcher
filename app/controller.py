@@ -251,15 +251,33 @@ class Controller(object):
         return int(time.time())
 
 
+class StompListener(stomp.ConnectionListener):
+    def __init__(self, client):
+       self.__client = client
+    
+    def on_connecting(self, host_and_port):
+        print "Connecting to %s:%s" % host_and_port
+    
+    def on_connected(self, headers, body):
+        print "Connected: %s (%s)" % (headers, body)
+    
+    def on_disconnected(self, headers, body):
+        print "Disconnected, attempting to reconnect..."
+        self.__client.start()
+
+
 class StompClient(object):
     def __init__(self, config):
         self.__config = config
-        self.__open()
+        self.start()
     
-    def __open(self):
+    def start(self):
         """ Connect to stomp server """
         print "Connecting to STOMP server..."
-        self.__stomp = stomp.Connection()
+        self.__stomp = stomp.Connection(reconnect_sleep_initial = 15.0,
+                                        reconnect_sleep_increase = 0.0,
+                                        reconnect_sleep_max = 15.0)
+        self.__stomp.set_listener("main", StompListener(self))
         self.__stomp.start()
         self.__stomp.connect()
     

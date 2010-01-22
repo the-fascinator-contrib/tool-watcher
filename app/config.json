@@ -1,0 +1,24 @@
+{
+	"watcher": {
+		"db": "sqlite",
+		"dbFile": "queue.db",
+		"daemon": "False",
+		"watchDirs": {
+			"../watchThis": {
+				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store",
+				"ignoreDirectories": "tmp|temp|.svn|.ice",
+				"cxtTags": [],
+				"stopped": 0
+			}
+		},
+		"feedservice": {
+			"host": "localhost",
+			"port": 9000
+		}
+	},
+	"messaging": {
+		"enabled": false,
+		"uri": "stomp://localhost:61613",
+		"configFile": "/path/to/harvest-config.json"
+	}
+}

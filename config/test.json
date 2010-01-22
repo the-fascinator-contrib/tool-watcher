@@ -1,0 +1,9 @@
+{
+  "Boolean":true,
+  "int":42,
+  "list":[1, 2, 3, "Four"],
+  "dict": {
+        "key":"value",
+        "dict": { "key2":"value2" }
+    }
+}

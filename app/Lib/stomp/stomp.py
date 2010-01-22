@@ -33,7 +33,7 @@ except:
 try:
     sys._getframe()
     log = logging.getLogger('stomp.py')
-except ValueError:
+except:
     log = DevNullLogger()
 
 if not log:

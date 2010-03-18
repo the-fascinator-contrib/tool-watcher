@@ -19,6 +19,7 @@
 #
 
 import sys
+sys.path.append("Lib")
 try:
     thisModule = sys.modules.get(__name__)
     if hasattr(thisModule, "RunningAsWindowsSevice") and \
@@ -71,7 +72,7 @@ from controller import Controller
 from watchDirectory import WatchDirectory
 #   #Controller(db, fileSystem, config, Watcher, WatchDirectory, update=True)
 from feeder import Feeder           # Feeder(utils, controller)
-from webServer import webServe      # webServe(host, port, feeder) -> shutdownMethod
+from webServer2 import webServe      # webServe(host, port, feeder) -> shutdownMethod
 import configForm
 
 
@@ -87,7 +88,7 @@ class Watcher(object):
         self.__db = None
         self.__controller = None
         self.__feeder = None
-        self.__webServerShutdownMethod = None
+        self.__webServer = None
         self.__logger = logger
         self.__configWatcher = None
         dbName = self.__config.watcher.get("db", "sqlite")
@@ -116,9 +117,9 @@ class Watcher(object):
         feedservice = self.__config.watcher.get("feedservice", {})
         self.host = feedservice.get("host", "localhost")
         self.port = feedservice.get("port", 9000)
-        self.__webServerShutdownMethod = webServe(self.host, self.port, self.__feeder)
+        s = webServe(self.host, self.port, self.__feeder)
+        self.__webServer = s
         #------------------------
-        print "host='%s', port=%s" % (self.host, self.port)
 
 
     @property
@@ -133,15 +134,17 @@ class Watcher(object):
     def configFile(self):
         return self.__config.configFile
 
+    @property
+    def isServing(self):
+        return self.__webServer.isServing
+
 
     def close(self):
         print "FileWatcher closing"
         self.__configWatcher.close()
         self.__controller.close()
-        self.__webServerShutdownMethod()
+        self.__webServer.close()
         print "FileWatcher closed"
-        #print self.__controller._getRecordsCount()
-        #print self.queue.getFromDate(0)
 
 
     def __testListener(self, *args, **kwargs):
@@ -241,8 +244,10 @@ def notify(watcher):
     try:
         Application.Run()
         notify.Dispose()
+        print "Closed notify ok"
     except Exception, e:
-        print "Closing.."
+        print "Error closing notify - %s" % str(e)
+
 
 def extras(menuItems, watcher):
     from System.Windows.Forms import MenuItem, MessageBox, FolderBrowserDialog
@@ -290,23 +295,40 @@ def extras(menuItems, watcher):
 if __name__ == "__main__" or __name__=="<module>":
     import time
     logger = Logger("log.txt")
-    watcher = Watcher(logger)
-    try:
-        if len(sys.argv)>1 and sys.argv[1]=="no-notify":
-            pass
-        else:
-            raise Exception("notify")
-        t = time.time()
-        x = raw_input("Press enter to exit...")
-        if time.time()-t<.1:
-            raise Exception("")
-        watcher.close()
-    except:
-        if sys.platform=="cli":# and os.sep=="\\":        # Windows
+    if True:
+        watcher = Watcher(logger)
+        if len(sys.argv)>1 and sys.argv[1]=="notify":
+        #if sys.platform=="cli":# and os.sep=="\\":        # Windows
             notify(watcher)
         else:
+            time.sleep(1)
             while True:
                 time.sleep(1)
-            watcher.close()
+                #print "tic"
+                if not watcher.isServing:
+                    break
+        watcher.close()
+    else:
+        # Testing
+        print "--TESTING--"
+        class Feeder(object):
+            def formatDateTime(self, utc=False):
+                return "DateTime utc='%s'" % utc
+        feeder = Feeder()
+        shutdownMethod, isServing = webServe("localhost", 9000, feeder)
+        time.sleep(1)
+        while True:
+            time.sleep(1)
+            if isServing():
+                print "isServing..."
+            else:
+                print "stopped serving"
+                break
+
+    print "--DONE--"
+    try:
+        sys.exit(0)
+    except Exception, e:
+        print "-- %s" % str(e)
 
 

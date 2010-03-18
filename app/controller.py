@@ -93,7 +93,6 @@ class Controller(object):
 
     def startWatching(self, watchDirectory):
         ## Remove all paths that are watched by any other watchDirectories
-        print "startWatching '%s'" % watchDirectory.path
         self.__watchDirectories[watchDirectory.path] = watchDirectory
         self.__watch(watchDirectory)
         self._updateWalk(watchDirectory, startEvent=True)
@@ -216,7 +215,10 @@ class Controller(object):
             watchDirectory.addListener(self._updateHandler)
             watcher.startWatching()
         except Exception, e:
-            print "Failed to start watching '%s' - %s" % (watchDirectory.path, str(e))
+            msg = str(e)
+            if msg.find("Directory does not exists")!=-1:
+                msg = "Directory does not exists!"
+            print "Failed to start watching '%s' - %s" % (watchDirectory.path, msg)
 
 
     def __isStartWatch(self, watchDirectory):

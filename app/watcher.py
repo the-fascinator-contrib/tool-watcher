@@ -19,7 +19,6 @@
 #
 
 import sys
-sys.path.append("Lib")
 try:
     thisModule = sys.modules.get(__name__)
     if hasattr(thisModule, "RunningAsWindowsSevice") and \
@@ -47,6 +46,8 @@ except:
     pass
 import os
 import time
+os.chdir(os.path.split(__file__)[0])
+sys.path.append("Lib")
 
 if sys.platform!="cli":
     raise Exception("Currently this program can only run under IronPython (under the Windows or Mono .NET framework)")

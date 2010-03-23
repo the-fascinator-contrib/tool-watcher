@@ -259,8 +259,8 @@ class Database(object):
                 try:
                     self.__connection.CreateFile(self.__dbFile)
                     self.__connection.Open()
-                except:
-                    pass
+                except Exception, e2:
+                    print "Error creating file '%s' - %s" % (self.__dbFile, str(e2))
                 sqlStr = """CREATE TABLE queue
                     (   file    NVARCHAR(300) PRIMARY KEY,
                         time    INTEGER,

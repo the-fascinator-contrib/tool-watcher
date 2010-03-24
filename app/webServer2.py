@@ -3,6 +3,7 @@ import clr
 from System import AsyncCallback
 from System.Net import HttpListener, HttpListenerException
 from System.Text import Encoding
+from System.IO import StreamReader
 from System.Threading import Thread, ThreadStart
 from threading import Thread as PyThread
 import os
@@ -28,6 +29,7 @@ class WebServer2(object):
   <body>
     <h1>Simple Server</h1>
     %s
+    <div><a href='/upload'>Upload test</a></div>
   </body>
 </html>"""
     
@@ -56,7 +58,7 @@ class WebServer2(object):
         text, headers = self.getText(request)
         buffer = Encoding.UTF8.GetBytes(text)
         response.ContentLength64 = buffer.Length
-        #response.AddHeader("Content-type", contentType)
+        #response.AddHeader("Content-Type", contentType)
         for k, v in headers.iteritems():
             response.AddHeader(k, v)
         output = response.OutputStream
@@ -89,8 +91,8 @@ class WebServer2(object):
             data +=  "<div>-- Headers=%s</div>" % str(headers)
         except Exception, e:
             data += "ERROR:" + str(e)
-        return self.text % data, {"Content-type":"text/html"}
-    
+        return self.text % data, {"Content-Type":"text/html"}
+
 
     def _serveForever(self):
         self._serve = True
@@ -281,7 +283,7 @@ def webServe(host, port, feeder):
             data = "ERROR: %s" % str(e)
             print data
 
-        headers["Content-type"] = contentType
+        headers["Content-Type"] = contentType
         if lastModified:
             headers["Last-Modified"] = lastModified
         return data, headers
@@ -297,10 +299,98 @@ def webServe(host, port, feeder):
     return s
 
 
+
 def test():
-    import sys
     print "--TESTING--"
+    origGetText = None
+    def getPostData(request):
+        # This should be optimized
+        files = {}          # name :[filename, data]
+        pData = {}          # name : value
+        newLine = "\r\n"
+        i = request.InputStream
+        if i is None:
+            return
+        try:
+            encoding = request.ContentEncoding
+            sreader = StreamReader(i, encoding)
+            line = sreader.ReadLine()
+            data = sreader.ReadToEnd()
+            i.Close()
+            sreader.Close()
+            endMarker = line + "--"
+            data = data.split(endMarker)[0]
+            parts = data.split(newLine + line + newLine)
+            for part in parts:
+                filename = None
+                l, part = part.split(newLine, 1)
+                name = l.split('name="')[1].split('"')[0]
+                name = unquote(name)
+                if l.find(' filename="')!=-1:
+                    filename = l.split('filename="')[1].split('"')[0]
+                    filename = unquote(filename)
+                while l!="":
+                    l, part = part.split(newLine, 1)
+                data = part
+                if filename:
+                    files[name] = [filename, data]
+                    pData[name] = filename
+                else:
+                    pData[name] = data
+        except Exception, e:
+            print str(e)
+        return pData, files
+    def getText(request):
+        headers = {}
+        contentType = "text/html"
+        data = """<html>
+    <head><title>Test2</title></head>
+    <body>
+     <h2>File upload test</h2>
+     <form method='POST' enctype='multipart/form-data' action='/upload' >
+       <input type='file' name='fileOne' /> <br/>
+       <input type='file' name='fileTwo' /> <br/>
+       <input type='text' name='test"text' value='test"ing' /> <br/>
+       <input type='text' name='test2' value='Two'/> <br/>
+       <textarea name='textareaTest'>Area</textarea> <br/>
+       <input type='submit' value='Submit' />
+     </form>
+    </body>
+</html>"""
+        queryStrings = {}
+        for k in request.QueryString.Keys:
+            queryStrings[k] = request.QueryString[k]
+        rawUrl = request.RawUrl
+        path = rawUrl.split("?")[0].split("#")[0]
+        path = unquote(path.replace("+", " "))
+        if path!="/upload":
+            try:
+                return origGetText(request)
+            except Exception, e:
+                print str(e)
+                data = str(e)
+
+        print "\n==============================="
+        print "path='%s'" % path
+        print "queryStrings='%s'" % str(queryStrings)
+        try:
+            pData, files = getPostData(request)
+            print "--data--"
+            for k, v in pData.iteritems():
+                print "%s='%s'" % (k, v)
+            print "--files--"
+            for k, v in files.iteritems():
+                print "%s (%s) = '%s'" % (k, v[0], v[1])
+            print "-- --"
+        except Exception, e:
+            print str(e)
+        headers["Content-Type"] = contentType
+        print "- done -"
+        return data, headers
+
     s = WebServer2()
+    origGetText = s.getText
+    s.getText = getText
     s.startServing()
     s.exit = sys.exit
     return s

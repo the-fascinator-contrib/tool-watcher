@@ -39,14 +39,16 @@ try:
         except Exception, e:
             sys.stderr.write(str(e))
             simpleLogger.WriteError("ERROR: %s" % str(e))
-    elif sys.prefix.startswith("/"):
-        if sys.version.startswith("2.5") or sys.version.startswith("2.4"):
-            sys.path.append("/usr/lib/python2.5")
+#    elif sys.prefix.startswith("/"):
+#        if sys.version.startswith("2.5") or sys.version.startswith("2.4"):
+#            sys.path.append("/usr/lib/python2.5")
 except:
     pass
 import os
 import time
-os.chdir(os.path.split(__file__)[0])
+_ = os.path.split(__file__)[0]
+if _:
+    os.chdir(_)
 sys.path.append("Lib")
 
 if sys.platform!="cli":
@@ -296,7 +298,7 @@ def extras(menuItems, watcher):
 if __name__ == "__main__" or __name__=="<module>":
     import time
     logger = Logger("log.txt")
-    if True:
+    if False:
         watcher = Watcher(logger)
         if len(sys.argv)>1 and sys.argv[1]=="notify":
         #if sys.platform=="cli":# and os.sep=="\\":        # Windows
@@ -316,11 +318,11 @@ if __name__ == "__main__" or __name__=="<module>":
             def formatDateTime(self, utc=False):
                 return "DateTime utc='%s'" % utc
         feeder = Feeder()
-        shutdownMethod, isServing = webServe("localhost", 9000, feeder)
+        s = webServe("localhost", 9000, feeder)
         time.sleep(1)
         while True:
             time.sleep(1)
-            if isServing():
+            if s.isServing:
                 print "isServing..."
             else:
                 print "stopped serving"

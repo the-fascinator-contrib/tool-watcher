@@ -298,7 +298,7 @@ def extras(menuItems, watcher):
 if __name__ == "__main__" or __name__=="<module>":
     import time
     logger = Logger("log.txt")
-    if False:
+    if True:
         watcher = Watcher(logger)
         if len(sys.argv)>1 and sys.argv[1]=="notify":
         #if sys.platform=="cli":# and os.sep=="\\":        # Windows

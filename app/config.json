@@ -5,7 +5,7 @@
 		"daemon": "False",
 		"watchDirs": {
 			"../watchThis": {
-				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store",
+				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store|.~lock*",
 				"ignoreDirectories": "tmp|temp|.svn|.ice",
 				"cxtTags": [],
 				"stopped": 0

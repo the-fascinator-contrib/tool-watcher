@@ -19,7 +19,7 @@
 
 """ FileSystem utility module to support watcher
 @requires: os
-"""
+""" 
 
 import os
 

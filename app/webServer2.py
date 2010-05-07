@@ -161,15 +161,15 @@ def webServe(host, port, feeder):
             if part=="":
                 continue
             if part[0].isdigit():
-                if fromDate is None:
+                if fromDate is None or fromDate=="":
                     fromDate = part
-                elif toDate is None:
+                elif toDate is None or toDate=="":
                     toDate = part
             elif part.isalpha():
                 if cmd is None:
                     cmd = part
-        if fromDate is None:
-            fromDate = "1970-01-01"
+        if fromDate is None or fromDate=="":
+            fromDate = "1971-01-01"
         return fromDate, toDate, cmd
 
     def getJsonFeed(fromDate, toDate):
@@ -216,6 +216,7 @@ def webServe(host, port, feeder):
             return cmp(a[1], b[1])
         try:
             rows = feeder.getFeed(fromDate, toDate, True)
+            
             rows.sort(compare)
             data = ""
             for file, eventTime, eventName, isDir in rows:

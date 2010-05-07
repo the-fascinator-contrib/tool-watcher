@@ -143,11 +143,11 @@ class Watcher(object):
 
 
     def close(self):
-        print "FileWatcher closing"
+        #print "FileWatcher closing"
         self.__configWatcher.close()
         self.__controller.close()
         self.__webServer.close()
-        print "FileWatcher closed"
+        #print "FileWatcher closed"
 
 
     def __testListener(self, *args, **kwargs):

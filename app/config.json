@@ -4,8 +4,8 @@
 		"dbFile": "queue.db",
 		"daemon": "False",
 		"watchDirs": {
-			"../watchThis": {
-				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store|.~lock*",
+			"/home/octalina/Documents/picture/text/smaller": {
+				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store|.*",
 				"ignoreDirectories": "tmp|temp|.svn|.ice",
 				"cxtTags": [],
 				"stopped": 0
@@ -17,8 +17,8 @@
 		}
 	},
 	"messaging": {
-		"enabled": false,
+		"enabled": true,
 		"uri": "stomp://localhost:61613",
-		"configFile": "/path/to/harvest-config.json"
+		"configFile": "/home/octalina/.fascinator/harvest/workflows/workflow-harvester.json"
 	}
 }

@@ -299,10 +299,11 @@ class StompClient(object):
             fp.close()
             jsonConf["source"] = "watcher"
             jsonConf["configDir"] = os.path.split(configFile)[0]
+            jsonConf["configFile"] = configFile
             jsonConf["oid"] = file
             if eventName == "del":
                 jsonConf["deleted"] = "true"
-            self.__stomp.send(dumps(jsonConf), destination="/queue/harvest")
+            self.__stomp.send(dumps(jsonConf), destination="/queue/ingest")
 
 
 

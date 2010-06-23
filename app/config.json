@@ -19,6 +19,6 @@
 	"messaging": {
 		"enabled": true,
 		"uri": "stomp://localhost:61613",
-		"configFile": "/home/octalina/.fascinator/harvest/workflows/workflow-harvester.json"
+		"configFile": "/path/to/jsonq-files.json"
 	}
 }

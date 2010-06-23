@@ -4,7 +4,7 @@
 		"dbFile": "queue.db",
 		"daemon": "False",
 		"watchDirs": {
-			"/home/octalina/Documents/picture/text/smaller": {
+			"../watchThis": {
 				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store|.*",
 				"ignoreDirectories": "tmp|temp|.svn|.ice",
 				"cxtTags": [],

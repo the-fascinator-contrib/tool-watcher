@@ -19,6 +19,6 @@
 	"messaging": {
 		"enabled": false,
 		"uri": "stomp://localhost:61613",
-		"configFile": "/path/to/jsonq-files.json"
+		"configFile": "/path/to/watcher.json"
 	}
 }

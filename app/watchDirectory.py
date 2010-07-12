@@ -18,7 +18,8 @@
 #
 
 import re
-
+import os
+import glob
 
 class WatchDirectory(object):
     # Constructor:
@@ -71,9 +72,15 @@ class WatchDirectory(object):
     def __getIgnoreDirectories(self):
         return "|".join(self.__ignoreDirectories)
     def __setIgnoreDirectories(self, ignoreDirectories):
-        self.__ignoreDirectories = ignoreDirectories.split("|")
-        while self.__ignoreDirectories.count(""):
-            self.__ignoreDirectories.remove("")
+        #self.__ignoreDirectories = ignoreDirectories.split("|")
+        splitIgnoreDirectories = ignoreDirectories.split("|")
+        for dir in splitIgnoreDirectories:
+                globFileList = glob.glob(os.path.join(self.__path,dir))
+                for file in globFileList:
+                    if file != []:
+                        self.__ignoreDirectories.append(os.path.split(file)[1])
+        #while self.__ignoreDirectories.count(""):
+        #    self.__ignoreDirectories.remove("")
     ignoreDirectories = property(__getIgnoreDirectories, __setIgnoreDirectories)
 
     def __getStop(self):

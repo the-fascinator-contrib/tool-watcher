@@ -6,7 +6,7 @@
 		"watchDirs": {
 			"../watchThis": {
 				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store|.*|.~lock*|~*",
-				"ignoreDirectories": "tmp|temp|*.*",
+				"ignoreDirectories": "tmp|temp|.*",
 				"cxtTags": [],
 				"stopped": 0
 			}

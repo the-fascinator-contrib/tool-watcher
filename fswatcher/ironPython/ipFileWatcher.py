@@ -94,7 +94,7 @@ class IPFileWatcher(object):
             eventName = "mod"
         elif e.ChangeType==WatcherChangeTypes.Deleted:
             eventName = "del"
-        #print "__onChanged() path='%s', eventName='%s', eventTime='%s'" % (path, eventName, eventTime)
+        print "__onChanged() path='%s', eventName='%s', eventTime='%s'" % (path, eventName, eventTime)
         # to help reduce double events
         if self.__lastEvent==(path, eventName, eventTime):
             return
@@ -112,12 +112,15 @@ class IPFileWatcher(object):
     
     
     def __onRenamed(self, source, e):
-        #print "__onRenamed event"
         print " rename oldName=%s, name=%s" % (e.OldFullPath, e.FullPath)
-        path = self.__fs.split(e.FullPath)[0]
+        #path = self.__fs.split(e.FullPath)[0]
+        #This is done to fix the renaming of file or folder within sub directory
+        path = e.FullPath.replace(e.Name, "")
         ev = FileSystemEventArgs(WatcherChangeTypes.Created, path, e.Name)
         self.__onChanged(source, ev)
-        path = self.__fs.split(e.OldFullPath)[0]
+        #path = self.__fs.split(e.OldFullPath)[0]
+        #This is done to fix the renaming of file or folder within sub directory
+        path = e.OldFullPath.replace(e.OldName, "")
         ev = FileSystemEventArgs(WatcherChangeTypes.Deleted, path, e.OldName)
         self.__onChanged(source, ev)
     

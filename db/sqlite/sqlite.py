@@ -24,11 +24,14 @@
 """
 
 from types import IntType
-import sys
+import sys, platform
 if sys.platform=="cli":
     import clr
     try:
-        clr.AddReference("System.Data.SQLite")
+        if platform.architecture()[0]=="64bit":
+            clr.AddReferenceToFileAndPath("64bit/System.Data.SQLite.dll")
+        else:
+            clr.AddReferenceToFileAndPath("32bit/System.Data.SQLite.dll")
     except Exception, e:
         clr.LoadAssemblyFromFile("System.Data.SQLite.dll")
         clr.AddReference("System.Data.SQLite")

@@ -1,24 +1,25 @@
 {
-	"watcher": {
-		"db": "sqlite",
-		"dbFile": "queue.db",
-		"daemon": "False",
-		"watchDirs": {
-			"../watchThis": {
-				"ignoreFileFilter": "*.tmp|$*.*|.DS_Store|.*|.~lock*|~*",
-				"ignoreDirectories": "tmp|temp|.*",
-				"cxtTags": [],
-				"stopped": 0
-			}
-		},
-		"feedservice": {
-			"host": "localhost",
-			"port": 9000
-		}
-	},
-	"messaging": {
-		"enabled": false,
-		"uri": "stomp://localhost:61613",
-		"configFile": "/path/to/watcher.json"
-	}
+    "watcher": {
+        "db": "sqlite",
+        "dbFile": "queue.db",
+        "daemon": "False",
+        "watchDirs": {
+            "H:/ADFI": {
+                "ignoreFileFilter": "*.tmp|$*.*|.DS_Store|.*|.~lock*|~*",
+                "ignoreDirectories": "tmp|temp|.*",
+                "cxtTags": [],
+                "stopped": 0
+            }
+        },
+        "feedservice": {
+            "host": "localhost",
+            "port": 9000
+        }
+    },
+    "messaging": {
+        "enabled": false,
+        "host": "localhost",
+        "port": 61613,
+        "configFile": "/path/to/watcher.json"
+    }
 }

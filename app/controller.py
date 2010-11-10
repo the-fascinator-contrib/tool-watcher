@@ -276,7 +276,10 @@ class StompClient(object):
     def start(self):
         """ Connect to stomp server """
         print "Connecting to STOMP server..."
-        self.__stomp = stomp.Connection(reconnect_sleep_initial = 15.0,
+        host = self.__config.messaging.get("host")
+        port = self.__config.messaging.get("port")
+        self.__stomp = stomp.Connection(host_and_ports = [ (host, port) ],
+                                        reconnect_sleep_initial = 15.0,
                                         reconnect_sleep_increase = 0.0,
                                         reconnect_sleep_max = 15.0)
         self.__stomp.set_listener("main", StompListener(self))

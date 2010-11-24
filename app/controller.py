@@ -17,21 +17,13 @@
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-import os, time
-
-try:
-    from json import loads, dumps
-except:
-    from json2_5 import loads, dumps
-
-import sys
-sys.path.append("Lib")
-import stomp
+import time
 
 
 class Controller(object):
     # Constructor:
-    #   Controller(db, fileSystem, config, Watcher, WatchDirectory, update=True)
+    #   Controller(db, fileSystem, config, FileWatcher, WatchDirectory, 
+    #                                   update=True)
     # Properties:
     #   watchDirectories
     # Methods:
@@ -39,19 +31,20 @@ class Controller(object):
     #   startWatching(watchDirectory)
     #   stopWatching(watchDirectory)
     #   getRecordsFromDate(fromDate=0, toDate=None)
+    #   addListener(listener)
+    #   removeListener(listener)
     #   close()
     #   _getRecordsCount(startingWithPath="")
     #   _updateWalk(watchDirectory)
-    #   _updateHandler(file, eventTime, eventName, isDir=False, walk=False)
-    def __init__(self, db, fileSystem, config, Watcher, WatchDirectory, update=True):
+    #   _updateHandler(file, eventTime, eventName, isDir=False)
+    def __init__(self, db, fileSystem, config, FileWatcher, WatchDirectory, \
+                        update=True):
         self.__db = db
         self.__fs = fileSystem          # .getModifiedTime(path), .walker(path, callback)
-        self.__stomp = None
-        if config.messaging.enabled:
-            self.__stomp = StompClient(config)
-        self.__Watcher = Watcher        # is a FileSystemWatcher
+        self.__FileWatcher = FileWatcher        # is a FileSystemWatcher
         self.__WatchDirectory = WatchDirectory
         self.__watchDirectories = self.__getWatchDirectoriesFromConfig(config)
+        self.__listeners = []
         #config.addConfigChangeWatcher(self.__)
         for watchDirectory in self.__watchDirectories.values():
             # check to see if we are conintue watching or are starting watching
@@ -106,7 +99,6 @@ class Controller(object):
         #
         rows = self.__db.getRecordsStartingWithPath(watchDirectory.path[:-1])
         timeNow = self.__timeNow()
-        uList = []
         ## Remove all paths that are watched by any other watchDirectories
         #for opath in self.__watchDirectories.keys():
         #    if watchDirectory.path.startswith(opath):
@@ -119,15 +111,24 @@ class Controller(object):
                 eventName = "stopdel"
             else:
                 eventName = "stop"
-            uList.append((file, timeNow, eventName, isDir))
-        self.__updatedb(uList)
-
-
+            self._updateHandler(file, timeNow, eventName, isDir)
+    
+    
     def getRecordsFromDate(self, fromDate=0, toDate=None):
         rows = self.__db.getRecordsFromDate(fromDate, toDate)
         return rows
-
-
+    
+    
+    def addListener(self, listener):
+        self.__listeners.append(listener)
+    
+    def removeListener(self, listener):
+        if self.__listeners.count(listener)>0:
+            self.__listeners.remove(listener)
+            return True
+        return False
+    
+    
     def close(self):
         for watchDirectory in self.__watchDirectories.itervalues():
             watcher = watchDirectory.watcher
@@ -147,7 +148,6 @@ class Controller(object):
         dfiles = dict([(row[0], row) for row in rows])
         timeNow = self.__timeNow()
 
-        updateList = []
         def callback(path, dirs, files):
             path = path.replace("\\", "/")
             if watchDirectory.filter(path)==False:
@@ -161,7 +161,7 @@ class Controller(object):
             else:
                 etime = self.__fs.getModifiedTime(path)
                 eventName = "mod"
-            updateList.append((path[:-1], etime, eventName, True))
+            self._updateHandler(path[:-1], etime, eventName, True)
             if dfiles.has_key(path[:-1]):
                 dfiles.pop(path[:-1])
             for file in files:
@@ -174,42 +174,37 @@ class Controller(object):
                 else:
                     etime = self.__fs.getModifiedTime(fullFile)
                     eventName = "mod"
-                updateList.append((fullFile, etime, eventName, False))
+                self._updateHandler(fullFile, etime, eventName, False)
                 if dfiles.has_key(fullFile):
                     dfiles.pop(fullFile)
         self.__fs.walker(watchDirectory.path, callback)
         # what is left must have been deleted
         for file, _, _, isDir in dfiles.itervalues():
             print "deleting '%s'" % file
-            updateList.append((file, timeNow, "del", isDir))
-        self.__updatedb(updateList)
+            self._updateHandler(file, timeNow, "del", isDir)
 
 
-    def _updateHandler(self, file, eventTime, eventName, isDir=False, walk=False):
-        if walk and isDir and eventName=="del":
-            timeNow = self.__timeNow()
-            updateList = []
-            rows = self.__db.getRecordsStartingWithPath(file)
-            for f, eTime, eName, d in rows:
-                if not eName.startswith("stop"):
-                    updateList.append(f, timeNow, "del", d)
-            self.__updatedb(updateList)
-        else:
-            self.__updatedb([(file, eventTime, eventName, isDir)])
+    def _updateHandler(self, file, eventTime, eventName, isDir=False):
+        self.__updatedb([(file, eventTime, eventName, isDir)])
+        for listener in self.__listeners:
+            if callable(listener):
+                try:
+                    listener(file, eventTime, eventName, isDir)
+                except Exception, e:
+                    pass
 
 
     def __updatedb(self, uList):
-        self.__db.updateList(uList)
-        if self.__stomp is not None:
-            for file, eventTime, eventName, isDir in uList:
-                file = file.replace("'", "''").replace("\\", "/")
-                if not isDir:
-                    self.__stomp.queueUpdate(file, eventName)
-
+        try:
+            self.__db.updateList(uList)
+        except Exception, e:
+            print "ERROR in db.updateList() - '%s'" % str(e)
+    
+    
     def __watch(self, watchDirectory):
         #print "__watch '%s'" % watchDirectory
         try:
-            watcher = self.__Watcher(watchDirectory.path, self.__fs)
+            watcher = self.__FileWatcher(watchDirectory.path, self.__fs, self.__getChildrenOf)
             watchDirectory.watcher = watcher
             watcher.addListener(watchDirectory.updateHandler)
             watchDirectory.addListener(self._updateHandler)
@@ -219,8 +214,13 @@ class Controller(object):
             if msg.find("Directory does not exists")!=-1:
                 msg = "Directory does not exists!"
             print "Failed to start watching '%s' - %s" % (watchDirectory.path, msg)
-
-
+    
+            
+    def __getChildrenOf(self, path):
+        rows = self.__db.getAllActiveChildrenOfPath(path)
+        return [(file, isDir) for file, et, en, isDir in rows]
+    
+    
     def __isStartWatch(self, watchDirectory):
         # is a 'start watching' if this path does not exist in the database
         #       or it's eventName starts with 'stop'
@@ -253,60 +253,8 @@ class Controller(object):
         return int(time.time())
 
 
-class StompListener(stomp.ConnectionListener):
-    def __init__(self, client):
-       self.__client = client
-    
-    def on_connecting(self, host_and_port):
-        print "Connecting to %s:%s" % host_and_port
-    
-    def on_connected(self, headers, body):
-        print "Connected: %s (%s)" % (headers, body)
-    
-    def on_disconnected(self, headers, body):
-        print "Disconnected, attempting to reconnect..."
-        self.__client.start()
-
-
-class StompClient(object):
-    def __init__(self, config):
-        self.__config = config
-        self.start()
-    
-    def start(self):
-        """ Connect to stomp server """
-        print "Connecting to STOMP server..."
-        host = self.__config.messaging.get("host")
-        port = self.__config.messaging.get("port")
-        self.__stomp = stomp.Connection(host_and_ports = [ (host, port) ],
-                                        reconnect_sleep_initial = 15.0,
-                                        reconnect_sleep_increase = 0.0,
-                                        reconnect_sleep_max = 15.0)
-        self.__stomp.set_listener("main", StompListener(self))
-        self.__stomp.start()
-        self.__stomp.connect()
-    
-    def stop(self):
-        if self.__stomp is not None:
-            print "Disconnecting from STOMP server..."
-            self.__stomp.stop()
-    
-    def queueUpdate(self, file, eventName):
-        print "Queuing '%s' for '%s'" % (eventName, file)
-        configFile = self.__config.messaging.get("configFile")
-        if configFile is None:
-            print "No messaging configFile defined!"
-        else:
-            fp = open(configFile)
-            jsonConf = loads(fp.read())
-            fp.close()
-            jsonConf["source"] = "watcher"
-            jsonConf["configDir"] = os.path.split(configFile)[0]
-            jsonConf["configFile"] = configFile
-            jsonConf["oid"] = file
-            if eventName == "del":
-                jsonConf["deleted"] = "true"
-            self.__stomp.send(dumps(jsonConf), destination="/queue/ingest")
-
-
-
+        
+        
+        
+        
+        

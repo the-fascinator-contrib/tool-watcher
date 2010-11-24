@@ -73,9 +73,10 @@ from utils import Utils
 from config import Config
 from controller import Controller
 from watchDirectory import WatchDirectory
-#   #Controller(db, fileSystem, config, Watcher, WatchDirectory, update=True)
+#   #Controller(db, fileSystem, config, Watcher, WatchDirectory, update=True, stompClient=None)
 from feeder import Feeder           # Feeder(utils, controller)
 from webServer2 import webServe      # webServe(host, port, feeder) -> shutdownMethod
+from stompClient import StompClient
 import configForm
 
 
@@ -94,6 +95,7 @@ class Watcher(object):
         self.__webServer = None
         self.__logger = logger
         self.__configWatcher = None
+        self.__stompClient = None
         dbName = self.__config.watcher.get("db", "sqlite")
         sys.path.insert(0, "../db/%s" % dbName)
         Database = __import__(dbName).Database
@@ -106,6 +108,22 @@ class Watcher(object):
                                 FileWatcher, WatchDirectory, update=False)
         #self.__controller.configChanged(config)
         #self.__config.addReloadWatcher(self.__controller.configChanged)
+        if self.__config.messaging.enabled:
+            self.__stompClient = StompClient(self.__config)
+            def stompListener(file, eventTime, eventName, isDir):
+                if not isDir:
+                    try:
+                        self.__stompClient.queueUpdate(file, eventName)
+                    except Exception, e:
+                        msg = "ERROR in stompClient.queueUpdate('%s', '%s) - '%s'"
+                        print msg % (file, eventName, str(e))
+            self.__controller.addListener(stompListener)
+        ## Log events
+        def logCallback(file, eventTime, eventName, isDir):
+            tStr = time.strftime("%Y%m%dT%H:%M:%S", time.localtime(eventTime))
+            print "%s \t%s \t%s \t%s" % (tStr, eventName, isDir, file)
+        self.__controller.addListener(logCallback)
+        ##
         self.__configWatcher = FileWatcher(self.__config.configFile, self.__fs)
         self.__configWatcher.startWatching()
         def configChanged(file, eventName, **kwargs):

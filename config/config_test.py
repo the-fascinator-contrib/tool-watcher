@@ -25,6 +25,7 @@
 import sys
 import unittest
 from unittest import TestCase
+sys.path.append("../common")
 
 import os
 from config import Config

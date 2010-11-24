@@ -21,38 +21,39 @@
 import clr
 from System.IO import FileSystemWatcher, FileSystemEventArgs, WatcherChangeTypes
 import time
-import os
+from os import sep as osPathSeperator
 
 
 class IPFileWatcher(object):
     """
     Note: directory to watch must already exist!
     Constructor:
-        IPFileWatcher(path, fs)
+        IPFileWatcher(path, fs, getChildrenOf)
     Methods:
-        addListener(listener)   #listener(path=path, eventTime=eventTime, eventName=eventName, isDir=isDir)
+        addListener(listener)   #listener(file=path, eventTime=eventTime, eventName=eventName, isDir=isDir)
         removeListener(listener)
         startWatching()
         stopWatching()
         close()
     """
-    def __init__(self, path, fs):
+    def __init__(self, path, fs, getChildrenOf=None):
         self.__fs = fs                    # .absPath() .isFile(), .isDir(), .split()
+        self.__getChildrenOf = getChildrenOf
         self.__fsWatcher = FileSystemWatcher()
         self.__listeners = []
         self.__lastEvent = None           # to help stop double events from occurring
         self.__fsWatcher.EnableRaisingEvents = False
         try:
-            self.__fsWatcher.Path = path.replace("/", os.sep)
+            self.__fsWatcher.Path = path.replace("/", osPathSeperator)
         except:
             path, filename = path.rsplit("/", 1)
             self.__fsWatcher.Path = path
             self.__fsWatcher.Filter = filename
         self.__fsWatcher.IncludeSubdirectories = True
         self.__fsWatcher.InternalBufferSize = 4096 * 8        # 32K  best kept in 4K blocks
-        self.__fsWatcher.Created += self.__onChanged
+        self.__fsWatcher.Created += self.__onCreated
         self.__fsWatcher.Changed += self.__onChanged
-        self.__fsWatcher.Deleted += self.__onChanged
+        self.__fsWatcher.Deleted += self.__onDeleted
         self.__fsWatcher.Renamed += self.__onRenamed
 
     
@@ -73,36 +74,65 @@ class IPFileWatcher(object):
     
     def stopWatching(self):
         self.__fsWatcher.EnableRaisingEvents = False
-
-
-    def __onChanged(self, source, e):
+    
+    
+    def __onCreated(self, source, e):
+        #print "Created %s" % e.FullPath
+        self.__onChanged(source, e)
+        if self.__fs.isDir(e.FullPath):
+            def callback(path, dirs, files):
+                path = path.rstrip("/")
+                for dir in dirs:
+                    ev = FileSystemEventArgs(WatcherChangeTypes.Created, path, dir)
+                    self.__onChanged(source, ev)
+                for file in files:
+                    ev = FileSystemEventArgs(WatcherChangeTypes.Created, path, file)
+                    self.__onChanged(source, ev)
+            self.__fs.walker(e.FullPath, callback)
+    
+    
+    def __onDeleted(self, source, e):
+        #print "Deleted %s" % e.FullPath
+        if callable(self.__getChildrenOf):
+            # get all children of e.FullPath (which does not end in a \)
+            path = e.FullPath.replace("\\", "/")+"/"
+            children = self.__getChildrenOf(path)
+            def _cmp(a, b):
+                return cmp(len(b[0]), len(a[0]))
+            children.sort()     # do deepest first
+            for file, isDir in children:
+                path, name = self.__fs.split(file)
+                ev = FileSystemEventArgs(WatcherChangeTypes.Deleted, path, name)
+                self.__onChanged(source, ev, isDir=isDir)
+        self.__onChanged(source, e)
+    
+    
+    def __onChanged(self, source, e, isDir=None):
         path = e.FullPath.replace("\\", "/")
         eventName = "mod"
         eventTime = int(time.time())
-        isDir = None
-        try:
-            if self.__fs.isDir(path):
-                isDir = True
-            elif self.__fs.isFile(path):
-                isDir = False
-        except Exception, e:
-            pass
-            print " error eventName='%s', path='%s' - %s" % (eventName, path, str(e))
+        if isDir is None:
+            try:
+                if self.__fs.isDir(path):
+                    isDir = True
+                elif self.__fs.isFile(path):
+                    isDir = False
+            except Exception, e:
+                pass
+                print " error eventName='%s', path='%s' - %s" % (eventName, path, str(e))
         if e.ChangeType==WatcherChangeTypes.Created:
             eventName = "mod"
         elif e.ChangeType==WatcherChangeTypes.Changed:
             eventName = "mod"
         elif e.ChangeType==WatcherChangeTypes.Deleted:
             eventName = "del"
-        print "__onChanged() path='%s', eventName='%s', eventTime='%s'" % (path, eventName, eventTime)
+        #print "__onChanged() path='%s', eventName='%s', eventTime='%s'" % (path, eventName, eventTime)
         # to help reduce double events
         if self.__lastEvent==(path, eventName, eventTime):
             return
         self.__lastEvent=(path, eventName, eventTime)
         #
         path = path.replace("\\", "/")
-        #if isDir and not path.endswith("/"):
-        #    path = path + "/"
         for listener in self.__listeners:
             try:
                 listener(file=path, eventTime=eventTime, eventName=eventName, isDir=isDir)
@@ -112,17 +142,14 @@ class IPFileWatcher(object):
     
     
     def __onRenamed(self, source, e):
-        print " rename oldName=%s, name=%s" % (e.OldFullPath, e.FullPath)
-        #path = self.__fs.split(e.FullPath)[0]
-        #This is done to fix the renaming of file or folder within sub directory
-        path = e.FullPath.replace(e.Name, "")
-        ev = FileSystemEventArgs(WatcherChangeTypes.Created, path, e.Name)
-        self.__onChanged(source, ev)
-        #path = self.__fs.split(e.OldFullPath)[0]
-        #This is done to fix the renaming of file or folder within sub directory
+        #print " rename oldFullPath=%s, oldName='%s', fullPath=%s, name='%s'" % (e.OldFullPath, e.OldName, e.FullPath, e.Name)
         path = e.OldFullPath.replace(e.OldName, "")
         ev = FileSystemEventArgs(WatcherChangeTypes.Deleted, path, e.OldName)
-        self.__onChanged(source, ev)
+        self.__onDeleted(source, ev)
+        ##
+        path = e.FullPath.replace(e.Name, "")
+        ev = FileSystemEventArgs(WatcherChangeTypes.Created, path, e.Name)
+        self.__onCreated(source, ev)
     
     
     def close(self):

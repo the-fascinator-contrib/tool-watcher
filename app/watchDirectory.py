@@ -33,7 +33,8 @@ class WatchDirectory(object):
     #   filter(file)
     #   addListener(listener)
     #   removeListener(listener)
-    #   updateHandler(file, eventTime, eventName, isDir=False, walk=False)
+    #   updateHandler(file, eventTime, eventName, isDir=False)
+    #   walk(callback)-------------???
     #   __cmp__
     #   __str__
     def __init__(self, path):
@@ -137,11 +138,11 @@ class WatchDirectory(object):
         return False
 
     
-    def updateHandler(self, file, eventTime, eventName, isDir=False, walk=False):
+    def updateHandler(self, file, eventTime, eventName, isDir=False):
         if self.filter(file):
             for listener in self.__listeners:
                 listener(file=file, eventTime=eventTime, eventName=eventName, \
-                            isDir=isDir, walk=walk)
+                            isDir=isDir)
 
     
     def __createFilterFrom(self, wildCardStr):

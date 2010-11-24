@@ -23,8 +23,9 @@
  - If running using standard Python, requires sqlite3 
 """
 
-from types import IntType
+from types import IntType, BooleanType
 import sys, platform
+
 if sys.platform=="cli":
     import clr
     try:
@@ -50,6 +51,7 @@ class Database(object):
     Methods:
         getRecordsFromDate(fromDate, toDate=None)   #Note: Date is an integer number in Seconds
         getRecordsStartingWithPath(path)
+        getAllActiveChildrenOfPath(path)
         getRecordWithPath(path)
         updateList(uList)     # uList is a list of (file, eventTime, eventName, isDir) tuples
         close()
@@ -124,6 +126,20 @@ class Database(object):
         rows = self._executeQuery(sqlStr)
         return rows
 
+    def getAllActiveChildrenOfPath(self, path=""):
+        """ Get record list starting with provided path
+        @param path: file path name, defaulted to ""
+        @type path: String
+        @return: rows of result
+        @rtype: list  
+        """
+        path = path.replace("'", "''").replace("\\", "/")
+        if not path.endswith("/"):
+            path += "/"
+        sqlStr = "SELECT * FROM queue WHERE file like '%s%%' and (event='mod' or event='start')"
+        sqlStr = sqlStr % (path)
+        rows = self._executeQuery(sqlStr)
+        return rows
 
     def getRecordWithPath(self, path):
         """ Get record list with provided path
@@ -156,10 +172,14 @@ class Database(object):
             file = file.replace("'", "''").replace("\\", "/")
             sqlStr = "SELECT count(*) FROM queue WHERE file='%s';" % file
             count = self._executeQuery(sqlStr)[0][0]
-            if count:
-                sqlStrs.append(self.__getUpdateStr(file, eventTime, eventName, isDir))
-            else:
-                sqlStrs.append(self.__getAddStr(file, eventTime, eventName, isDir))
+            try:
+                if count:
+                    sqlStrs.append(self.__getUpdateStr(file, eventTime, eventName, isDir))
+                else:
+                    sqlStrs.append(self.__getAddStr(file, eventTime, eventName, isDir))
+            except Exception, e:
+                print "ERROR in sqlite.updateList() ? count=%s- '%s'" % (count, str(e))
+                raise e
         sqlStr = "\n".join(sqlStrs)
         rowsUpdated = self._executeNonQuery(sqlStr)
         return rowsUpdated
@@ -203,7 +223,7 @@ class Database(object):
         @param file: file path to be inserted to database
         @type file: String
         @param eventTime: event time when event happened in number in seconds
-        @type eventTime: integer     
+        @type eventTime: integer
         @param eventName: event name returned from filesystem watcher
         @type eventName: String
         @param isDir: True if the file path is a directory, otherwise False
@@ -211,10 +231,10 @@ class Database(object):
         @return: sql insert statement
         @rtype: String  
         """
-        if type(isDir) is not IntType:
-            isDir = int(isDir)
+        if type(isDir) is not BooleanType:
+            isDir = bool(isDir)
         sqlStr = "INSERT INTO queue(file, time, event, isDir) VALUES('%s', '%s', '%s', '%s');"
-        sqlStr = sqlStr % (file, eventTime, eventName, isDir)
+        sqlStr = sqlStr % (file, eventTime, eventName, int(isDir))
         return sqlStr
 
 

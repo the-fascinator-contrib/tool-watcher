@@ -216,11 +216,10 @@ def webServe(host, port, feeder):
             return cmp(a[1], b[1])
         try:
             rows = feeder.getFeed(fromDate, toDate, True)
-            
             rows.sort(compare)
             data = ""
             for file, eventTime, eventName, isDir in rows:
-                data += "%s, %s, %s, %s\n" % (eventTime, eventName, file, isDir)
+                data += "%s, %s, %s, %s\n" % (eventTime, eventName, isDir, file)
             data = quoteHtml(data)
             #if True:
             try:
@@ -243,7 +242,7 @@ def webServe(host, port, feeder):
         s = s.replace("<", "&lt;").replace(">", "&gt;")
         return s
 
-    def getText(request):
+    def getText(request):       # main request entry point
         data = "--Text--"
         contentType = "text/plain"
         lastModified = None
@@ -260,6 +259,7 @@ def webServe(host, port, feeder):
         fromDate = headers.get("Last-Modified", "")
         toDate = None
         fromDate, toDate, cmd = getFromPath(path, fromDate)
+        cmd = cmd.lower()
 
         try:
             if cmd=="test":
@@ -278,6 +278,8 @@ def webServe(host, port, feeder):
             elif cmd=="shutdown":
                 #shutdown()
                 data = "shutdown"
+            elif cmd=="rundeleteunittest":
+                data = "done"
             else:
                 data, contentType, lastModified = getJsonFeed(fromDate, toDate)
         except Exception, e:

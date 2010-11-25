@@ -28,7 +28,7 @@ class IPFileWatcher(object):
     """
     Note: directory to watch must already exist!
     Constructor:
-        IPFileWatcher(path, fs, getChildrenOf)
+        IPFileWatcher(path, fs, getChildrenOf=None, getRecordWithPath=None)
     Methods:
         addListener(listener)   #listener(file=path, eventTime=eventTime, eventName=eventName, isDir=isDir)
         removeListener(listener)
@@ -36,9 +36,10 @@ class IPFileWatcher(object):
         stopWatching()
         close()
     """
-    def __init__(self, path, fs, getChildrenOf=None):
+    def __init__(self, path, fs, getChildrenOf=None, getRecordWithPath=None):
         self.__fs = fs                    # .absPath() .isFile(), .isDir(), .split()
         self.__getChildrenOf = getChildrenOf
+        self.__getRecordWithPath = getRecordWithPath
         self.__fsWatcher = FileSystemWatcher()
         self.__listeners = []
         self.__lastEvent = None           # to help stop double events from occurring
@@ -104,6 +105,14 @@ class IPFileWatcher(object):
                 path, name = self.__fs.split(file)
                 ev = FileSystemEventArgs(WatcherChangeTypes.Deleted, path, name)
                 self.__onChanged(source, ev, isDir=isDir)
+        # try and get the info from the database
+        try:
+            if callable(self.__getRecordWithPath):
+                row = self.__getRecordWithPath(path)
+                if row:
+                    print "db isDir='%s'" % row[3]
+        except Exception, e:
+            print "Error in __onDeleted() - '%s'" % str(e)
         self.__onChanged(source, e)
     
     

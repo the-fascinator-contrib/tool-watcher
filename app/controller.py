@@ -204,7 +204,8 @@ class Controller(object):
     def __watch(self, watchDirectory):
         #print "__watch '%s'" % watchDirectory
         try:
-            watcher = self.__FileWatcher(watchDirectory.path, self.__fs, self.__getChildrenOf)
+            watcher = self.__FileWatcher(watchDirectory.path, self.__fs, \
+                    self.__getChildrenOf, self.__db.getRecordWithPath)
             watchDirectory.watcher = watcher
             watcher.addListener(watchDirectory.updateHandler)
             watchDirectory.addListener(self._updateHandler)

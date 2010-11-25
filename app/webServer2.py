@@ -23,7 +23,7 @@ class WebServer2(object):
         self.failed = False
         self.failedReason = None
         self._host = host
-        self._port = 9000
+        self._port = port
         self.text="""<html>
   <head><title>Testing a simple .net server</title></head>
   <body>

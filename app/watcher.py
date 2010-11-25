@@ -136,7 +136,7 @@ class Watcher(object):
 
         self.__feeder = Feeder(self.__utils, self.__controller)
         feedservice = self.__config.watcher.get("feedservice", {})
-        self.host = feedservice.get("host", "localhost")
+        self.host = feedservice.get("host", "*")
         self.port = feedservice.get("port", 9000)
         s = webServe(self.host, self.port, self.__feeder)
         self.__webServer = s

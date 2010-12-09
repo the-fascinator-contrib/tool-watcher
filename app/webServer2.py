@@ -158,7 +158,7 @@ class WebServer2(object):
 def webServe(host, port, feeder):
     def getFromPath(path, fromDate):
         toDate = None
-        cmd = ""
+        cmd = None
         parts = path.split("/")
         for part in parts:
             if part=="":
@@ -173,6 +173,8 @@ def webServe(host, port, feeder):
                     cmd = part
         if fromDate is None or fromDate=="":
             fromDate = "1971-01-01"
+        if cmd is None:
+            cmd = ""
         return fromDate, toDate, cmd
 
     def getJsonFeed(fromDate, toDate):

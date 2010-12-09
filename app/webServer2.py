@@ -262,7 +262,6 @@ def webServe(host, port, feeder):
         fromDate = headers.get("Last-Modified", "")
         toDate = None
         fromDate, toDate, cmd = getFromPath(path, fromDate)
-        print "cmd='%s'" % cmd
         if cmd is None:
             cmd = ""
         cmd = cmd.lower()

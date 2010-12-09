@@ -173,8 +173,6 @@ def webServe(host, port, feeder):
                     cmd = part
         if fromDate is None or fromDate=="":
             fromDate = "1971-01-01"
-        if cmd is None:
-            cmd = ""
         return fromDate, toDate, cmd
 
     def getJsonFeed(fromDate, toDate):
@@ -264,6 +262,9 @@ def webServe(host, port, feeder):
         fromDate = headers.get("Last-Modified", "")
         toDate = None
         fromDate, toDate, cmd = getFromPath(path, fromDate)
+        print "cmd='%s'" % cmd
+        if cmd is None:
+            cmd = ""
         cmd = cmd.lower()
 
         try:

@@ -109,7 +109,7 @@ class Watcher(object):
         #self.__controller.configChanged(config)
         #self.__config.addReloadWatcher(self.__controller.configChanged)
         if self.__config.messaging.enabled:
-            self.__stompClient = StompClient(self.__config)
+            self.__stompClient = StompClient(self.__config, self.__utils)
             def stompListener(file, eventTime, eventName, isDir):
                 if not isDir:
                     try:

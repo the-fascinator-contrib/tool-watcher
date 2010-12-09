@@ -23,8 +23,9 @@ import os
 
 
 class StompClient(object):
-    def __init__(self, config):
+    def __init__(self, config, utils):
         self.__config = config
+        self.__utils = utils
         self.start()
     
     def start(self):
@@ -47,20 +48,25 @@ class StompClient(object):
     
     def queueUpdate(self, file, eventName):
         print "Queuing '%s' for '%s'" % (eventName, file)
-        configFile = self.__config.messaging.get("configFile")
-        if configFile is None:
-            print "No messaging configFile defined!"
-        else:
-            fp = open(configFile)
-            jsonConf = loads(fp.read())
-            fp.close()
-            jsonConf["source"] = "watcher"
-            jsonConf["configDir"] = os.path.split(configFile)[0]
-            jsonConf["configFile"] = configFile
-            jsonConf["oid"] = file
-            if eventName == "del":
-                jsonConf["deleted"] = "true"
-            self.__stomp.send(dumps(jsonConf), destination="/queue/ingest")
+        try:
+            configFile = self.__config.messaging.get("configFile")
+            if configFile is None:
+                print "No messaging configFile defined!"
+            else:
+                fp = open(configFile)
+                jsonConf = self.__utils.convertFromJson(fp.read())
+                fp.close()
+                jsonConf["source"] = "watcher"
+                jsonConf["configDir"] = os.path.split(configFile)[0]
+                jsonConf["configFile"] = configFile
+                jsonConf["oid"] = file
+                if eventName == "del":
+                    jsonConf["deleted"] = "true"
+                jsonStr = self.__utils.convertToJson(jsonConf)
+                self.__stomp.send(jsonStr, destination="/queue/ingest")
+        except Exception, e:
+            msg = "Error in queueUpdate(file='%s', eventName='%s') - '%s'"
+            msg = msg % (file, eventName, str(e))
 
 
 

@@ -155,7 +155,7 @@ class WebServer2(object):
 def webServe(host, port, feeder):
     def getFromPath(path, fromDate):
         toDate = None
-        cmd = None
+        cmd = ""
         parts = path.split("/")
         for part in parts:
             if part=="":

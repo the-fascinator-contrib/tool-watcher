@@ -40,30 +40,33 @@ class WebServer2(object):
         return self._serve
     
     def handleRequest(self, result):
-        listener = result.AsyncState
         try:
-            context = listener.EndGetContext(result) # allow the next request to be handled
-        except:
-            # exception when the thread has been aborted
-            return
-        self.pagesServed += 1
-        request = context.Request
-        response = context.Response
-        rawUrl = request.RawUrl
-        #if rawUrl=="/stop":
-        #    self.stop()
-        if rawUrl=="/shutdown":
-            self.close()
-        #text = getTextFromRequest(request)
-        text, headers = self.getText(request)
-        buffer = Encoding.UTF8.GetBytes(text)
-        response.ContentLength64 = buffer.Length
-        #response.AddHeader("Content-Type", contentType)
-        for k, v in headers.iteritems():
-            response.AddHeader(k, v)
-        output = response.OutputStream
-        output.Write(buffer, 0, buffer.Length)
-        output.Close()
+            listener = result.AsyncState
+            try:
+                context = listener.EndGetContext(result) # allow the next request to be handled
+            except:
+                # exception when the thread has been aborted
+                return
+            self.pagesServed += 1
+            request = context.Request
+            response = context.Response
+            rawUrl = request.RawUrl
+            #if rawUrl=="/stop":
+            #    self.stop()
+            if rawUrl=="/shutdown":
+                self.close()
+            #text = getTextFromRequest(request)
+            text, headers = self.getText(request)
+            buffer = Encoding.UTF8.GetBytes(text)
+            response.ContentLength64 = buffer.Length
+            #response.AddHeader("Content-Type", contentType)
+            for k, v in headers.iteritems():
+                response.AddHeader(k, v)
+            output = response.OutputStream
+            output.Write(buffer, 0, buffer.Length)
+            output.Close()
+        except Exception, e:
+            print "Error handleRequest() - '%s'" % str(e)
     
 
     def getText(self, request):

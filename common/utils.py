@@ -30,8 +30,11 @@ try:
     basic_parse = loads('{"random_json": "some_value"}')
 except:
     print "utils.py : Import of 'json.loads' has failed to parse, trying 'json2_5.loads'."
-    from json2_5 import loads, dumps
-
+    try:
+        from json2_5 import loads
+        basic_parse = loads('{"random_json": "some_value"}')
+    except:
+        raise Exception("Error accessing valid json library, 'json.loads' and 'json2_5.loads' both attempted")
 
 class Utils(object):
     def __init__(self):

@@ -26,7 +26,11 @@ try:
     basic_parse = loads('{"random_json": "some_value"}')
 except:
     print "config.py : Import of 'json.loads' has failed to parse, trying 'json2_5.loads'."
-    from json2_5 import loads
+    try:
+        from json2_5 import loads
+        basic_parse = loads('{"random_json": "some_value"}')
+    except:
+        raise Exception("Error accessing valid json library, 'json.loads' and 'json2_5.loads' both attempted")
 from types import DictType
 
 

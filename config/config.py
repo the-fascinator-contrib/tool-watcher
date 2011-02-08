@@ -23,8 +23,9 @@
 """
 try:
     from json import loads
-    #from json import dumps
+    basic_parse = loads('{"random_json": "some_value"}')
 except:
+    print "config.py : Import of 'json.loads' has failed to parse, trying 'json2_5.loads'."
     from json2_5 import loads
 from types import DictType
 

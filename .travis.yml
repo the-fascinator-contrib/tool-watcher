@@ -1,0 +1,7 @@
+notifications:
+  webhooks:
+    urls:
+      - http://dev.redboxresearchdata.com.au/hooks/travis
+    on_success: always
+    on_failure: never
+    on_start: never
